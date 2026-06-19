@@ -6,6 +6,12 @@
 	objectVersion = 90;
 	objects = {
 
+/* Begin PBXBuildFile section */
+		520205F42FE5BBF4001453FA /* Dependencies in Frameworks */ = {isa = PBXBuildFile; productRef = 520205F32FE5BBF4001453FA /* Dependencies */; };
+		520205F72FE5BC12001453FA /* SQLiteData in Frameworks */ = {isa = PBXBuildFile; productRef = 520205F62FE5BC12001453FA /* SQLiteData */; };
+		52319A7E2FE5B905005FB94B /* Kingfisher in Frameworks */ = {isa = PBXBuildFile; productRef = 52319A7D2FE5B905005FB94B /* Kingfisher */; };
+/* End PBXBuildFile section */
+
 /* Begin PBXFileReference section */
 		000000000000000000000120 /* StanisLoveTV.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = StanisLoveTV.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
@@ -22,6 +28,9 @@
 		000000000000000130000000 /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			files = (
+				520205F72FE5BC12001453FA /* SQLiteData in Frameworks */,
+				52319A7E2FE5B905005FB94B /* Kingfisher in Frameworks */,
+				520205F42FE5BBF4001453FA /* Dependencies in Frameworks */,
 			);
 		};
 /* End PBXFrameworksBuildPhase section */
@@ -60,6 +69,11 @@
 				000000000000000000000010 /* StanisLoveTV */,
 			);
 			name = StanisLoveTV;
+			packageProductDependencies = (
+				52319A7D2FE5B905005FB94B /* Kingfisher */,
+				520205F32FE5BBF4001453FA /* Dependencies */,
+				520205F62FE5BC12001453FA /* SQLiteData */,
+			);
 			productName = MyApp;
 			productReference = 000000000000000000000120 /* StanisLoveTV.app */;
 			productType = "com.apple.product-type.application";
@@ -88,6 +102,11 @@
 			);
 			mainGroup = 000000000000000000000001;
 			minimizedProjectReferenceProxies = 1;
+			packageReferences = (
+				52319A7C2FE5B905005FB94B /* XCRemoteSwiftPackageReference "Kingfisher" */,
+				520205F22FE5BBF4001453FA /* XCRemoteSwiftPackageReference "swift-dependencies" */,
+				520205F52FE5BC12001453FA /* XCRemoteSwiftPackageReference "sqlite-data" */,
+			);
 			preferredProjectObjectVersion = 90;
 			productRefGroup = 000000000000000000000020 /* Products */;
 			projectDirPath = "";
@@ -119,7 +138,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
-				APPLETVOS_DEPLOYMENT_TARGET = 27.0;
+				APPLETVOS_DEPLOYMENT_TARGET = 17.0;
 				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
 				CLANG_ANALYZER_NONNULL = YES;
 				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
@@ -189,7 +208,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
-				APPLETVOS_DEPLOYMENT_TARGET = 27.0;
+				APPLETVOS_DEPLOYMENT_TARGET = 17.0;
 				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
 				CLANG_ANALYZER_NONNULL = YES;
 				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
@@ -343,6 +362,53 @@
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		520205F22FE5BBF4001453FA /* XCRemoteSwiftPackageReference "swift-dependencies" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/pointfreeco/swift-dependencies";
+			requirement = {
+				kind = upToNextMinorVersion;
+				minimumVersion = 1.14.1;
+			};
+		};
+		520205F52FE5BC12001453FA /* XCRemoteSwiftPackageReference "sqlite-data" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/pointfreeco/sqlite-data";
+			requirement = {
+				kind = upToNextMinorVersion;
+				minimumVersion = 1.6.6;
+			};
+			traits = (
+			);
+		};
+		52319A7C2FE5B905005FB94B /* XCRemoteSwiftPackageReference "Kingfisher" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/onevcat/Kingfisher";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 8.10.0;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		520205F32FE5BBF4001453FA /* Dependencies */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 520205F22FE5BBF4001453FA /* XCRemoteSwiftPackageReference "swift-dependencies" */;
+			productName = Dependencies;
+		};
+		520205F62FE5BC12001453FA /* SQLiteData */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 520205F52FE5BC12001453FA /* XCRemoteSwiftPackageReference "sqlite-data" */;
+			productName = SQLiteData;
+		};
+		52319A7D2FE5B905005FB94B /* Kingfisher */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 52319A7C2FE5B905005FB94B /* XCRemoteSwiftPackageReference "Kingfisher" */;
+			productName = Kingfisher;
+		};
+/* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = 000000000000000000000000 /* Project object */;
 }

@@ -1,6 +1,6 @@
 # StanisLoveTV — Apple TV IPTV App
 
-**Platform**: tvOS 27+ | **UI**: SwiftUI only | **Architecture**: Clean Architecture | **Language**: Swift 5.9+
+**Platform**: tvOS 17+ | **UI**: SwiftUI only | **Architecture**: Clean Architecture | **Language**: Swift 5.9+
 
 IPTV player for Apple TV: M3U playlist management, channel browsing, EPG guide, video playback.
 
@@ -8,7 +8,7 @@ IPTV player for Apple TV: M3U playlist management, channel browsing, EPG guide, 
 
 ## Getting Started
 
-1. **Xcode**: latest release (`APPLETVOS_DEPLOYMENT_TARGET = 27`)
+1. **Xcode**: latest release (`APPLETVOS_DEPLOYMENT_TARGET = 17`)
 2. **Packages**: Xcode → File → Packages → Resolve, or `xcodebuild -resolvePackageDependencies`
 3. **Run**: scheme `StanisLoveTV` + Apple TV Simulator → ⌘R
 4. **Tests**: ⌘U or `xcodebuild test -scheme StanisLoveTV -destination 'platform=tvOS Simulator,name=Apple TV'`
