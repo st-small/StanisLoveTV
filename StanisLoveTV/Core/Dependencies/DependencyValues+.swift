@@ -52,19 +52,19 @@ private struct UnimplementedFavoriteRepository: FavoriteRepository {
 }
 
 private enum ChannelRepositoryKey: DependencyKey {
-    static var liveValue: any ChannelRepository { UnimplementedChannelRepository() }
+    static var liveValue: any ChannelRepository { DefaultChannelRepository() }
 }
 
 private enum PlaylistRepositoryKey: DependencyKey {
-    static var liveValue: any PlaylistRepository { UnimplementedPlaylistRepository() }
+    static var liveValue: any PlaylistRepository { DefaultPlaylistRepository() }
 }
 
 private enum EPGRepositoryKey: DependencyKey {
-    static var liveValue: any EPGRepository { UnimplementedEPGRepository() }
+    static var liveValue: any EPGRepository { DefaultEPGRepository() }
 }
 
 private enum FavoriteRepositoryKey: DependencyKey {
-    static var liveValue: any FavoriteRepository { UnimplementedFavoriteRepository() }
+    static var liveValue: any FavoriteRepository { DefaultFavoriteRepository() }
 }
 
 // MARK: - Use case dependencies
@@ -111,5 +111,4 @@ extension DependencyValues {
     }
 }
 
-// MARK: - Phase 3: database
 // MARK: - Phase 4: networkService
