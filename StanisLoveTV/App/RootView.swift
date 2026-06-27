@@ -4,6 +4,20 @@ struct RootView: View {
     @Environment(AppState.self) private var appState
 
     var body: some View {
+        MainTabView(appState: appState)
+    }
+}
+
+// Separate view so @State can be initialized with injected AppState
+private struct MainTabView: View {
+    @Environment(\.scenePhase) private var scenePhase
+    @State private var playlistsViewModel: PlaylistsViewModel
+
+    init(appState: AppState) {
+        _playlistsViewModel = State(wrappedValue: PlaylistsViewModel(appState: appState))
+    }
+
+    var body: some View {
         TabView {
             ChannelListView()
                 .tabItem { Label("Channels", systemImage: "play.tv") }
@@ -11,11 +25,16 @@ struct RootView: View {
             EPGView()
                 .tabItem { Label("Guide", systemImage: "calendar") }
 
-            PlaylistsView()
+            PlaylistsView(viewModel: playlistsViewModel)
                 .tabItem { Label("Playlists", systemImage: "list.bullet") }
 
             SettingsView()
                 .tabItem { Label("Settings", systemImage: "gear") }
+        }
+        .task { await playlistsViewModel.load() }
+        .task(id: scenePhase) {
+            guard scenePhase == .active else { return }
+            await playlistsViewModel.refreshActivePlaylistIfNeeded()
         }
     }
 }

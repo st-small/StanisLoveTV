@@ -11,6 +11,12 @@ final class DefaultPlaylistRepository: PlaylistRepository {
         }
     }
 
+    func fetch(id: UUID) async throws -> Playlist? {
+        try await db.writer.read { database in
+            try PlaylistRecord.find(id).fetchOne(database)?.domainModel
+        }
+    }
+
     func insert(_ playlist: Playlist) async throws {
         try await db.writer.write { database in
             try PlaylistRecord.insert {
