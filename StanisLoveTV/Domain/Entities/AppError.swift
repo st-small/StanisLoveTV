@@ -42,3 +42,17 @@ enum AppError: LocalizedError {
         }
     }
 }
+
+extension AppError {
+    init(_ error: Error) {
+        if let appError = error as? AppError {
+            self = appError
+        } else if let parseError = error as? ParseError {
+            self = .playlistParseError(parseError.localizedDescription)
+        } else if error is URLError {
+            self = .networkUnavailable
+        } else {
+            self = .networkUnavailable
+        }
+    }
+}

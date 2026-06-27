@@ -34,6 +34,7 @@ private struct UnimplementedChannelRepository: ChannelRepository {
 
 private struct UnimplementedPlaylistRepository: PlaylistRepository {
     func fetchAll() async throws -> [Playlist] { unimplemented("playlistRepository.fetchAll — wire in Phase 3", placeholder: []) }
+    func fetch(id: UUID) async throws -> Playlist? { unimplemented("playlistRepository.fetch — wire in Phase 3", placeholder: nil) }
     func insert(_ playlist: Playlist) async throws { unimplemented("playlistRepository.insert — wire in Phase 3") }
     func delete(id: UUID) async throws { unimplemented("playlistRepository.delete — wire in Phase 3") }
     func updateLastFetched(id: UUID, date: Date) async throws { unimplemented("playlistRepository.updateLastFetched — wire in Phase 3") }
