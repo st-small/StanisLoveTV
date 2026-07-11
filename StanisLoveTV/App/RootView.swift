@@ -12,14 +12,16 @@ struct RootView: View {
 private struct MainTabView: View {
     @Environment(\.scenePhase) private var scenePhase
     @State private var playlistsViewModel: PlaylistsViewModel
+    @State private var channelListViewModel: ChannelListViewModel
 
     init(appState: AppState) {
         _playlistsViewModel = State(wrappedValue: PlaylistsViewModel(appState: appState))
+        _channelListViewModel = State(wrappedValue: ChannelListViewModel(appState: appState))
     }
 
     var body: some View {
         TabView {
-            ChannelListView()
+            ChannelListView(viewModel: channelListViewModel)
                 .tabItem { Label("Channels", systemImage: "play.tv") }
 
             EPGView()
@@ -31,6 +33,7 @@ private struct MainTabView: View {
             SettingsView()
                 .tabItem { Label("Settings", systemImage: "gear") }
         }
+        .task { await channelListViewModel.load() }
         .task { await playlistsViewModel.load() }
         .task(id: scenePhase) {
             guard scenePhase == .active else { return }

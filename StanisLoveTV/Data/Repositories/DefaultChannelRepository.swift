@@ -66,15 +66,16 @@ final class DefaultChannelRepository: ChannelRepository {
         }
     }
 
-    func search(query: String) async throws -> [Channel] {
+    func search(query: String, playlistID: UUID) async throws -> [Channel] {
         try await db.writer.read { database in
             let pattern = "%\(query)%"
             return try #sql(
                 """
                 SELECT \(ChannelRecord.columns)
                 FROM \(ChannelRecord.self)
-                WHERE \(ChannelRecord.name) LIKE \(pattern)
-                   OR \(ChannelRecord.groupTitle) LIKE \(pattern)
+                WHERE \(ChannelRecord.playlistID) = \(playlistID)
+                  AND (\(ChannelRecord.name) LIKE \(pattern)
+                       OR \(ChannelRecord.groupTitle) LIKE \(pattern))
                 """,
                 as: ChannelRecord.self
             )
