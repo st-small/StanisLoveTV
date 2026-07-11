@@ -29,7 +29,7 @@ private struct UnimplementedChannelRepository: ChannelRepository {
     func fetchAll(playlistID: UUID) async throws -> [Channel] { unimplemented("channelRepository.fetchAll — wire in Phase 3", placeholder: []) }
     func fetchFavorites() async throws -> [Channel] { unimplemented("channelRepository.fetchFavorites — wire in Phase 3", placeholder: []) }
     func save(_ channels: [Channel], playlistID: UUID) async throws { unimplemented("channelRepository.save — wire in Phase 3") }
-    func search(query: String) async throws -> [Channel] { unimplemented("channelRepository.search — wire in Phase 3", placeholder: []) }
+    func search(query: String, playlistID: UUID) async throws -> [Channel] { unimplemented("channelRepository.search — wire in Phase 3", placeholder: []) }
 }
 
 private struct UnimplementedPlaylistRepository: PlaylistRepository {
