@@ -1,7 +1,7 @@
 import Foundation
 import SQLiteData
 
-@Table nonisolated struct PlaylistRecord: Identifiable {
+@Table("playlists") nonisolated struct PlaylistRecord: Identifiable {
     let id: UUID
     var name: String
     var urlString: String

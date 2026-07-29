@@ -1,7 +1,7 @@
 # StanisLoveTV — Master Implementation Plan
 
 **Date**: 2026-06-19  
-**Last updated**: 2026-06-19 (AppState pattern + refresh throttle constant finalised — ready to implement)  
+**Last updated**: 2026-07-29 (Phase 6.5 implemented and verified end-to-end; see "Статус: выполнено" in Phase 6.5 for bugs found along the way)  
 **Target**: tvOS 27+ | SwiftUI | Clean Architecture | SQLiteData | swift-dependencies  
 **Starting state**: Single `ContentView.swift` with placeholder text; `@main` struct in same file (must be extracted)
 
@@ -17,7 +17,8 @@
 | 4 | Networking & Parsers | M | Phase 2 |
 | 5 | M3U Playlist Management | L | Phases 3, 4 |
 | 6 | Channel Browser | L | Phase 5 |
-| 7 | Video Player | XL | Phase 6 |
+| 6.5 | End-to-End Onboarding → Playback Flow | S | Phase 6 |
+| 7 | Video Player | XL | Phase 6.5 |
 | 8 | EPG Guide | XL | Phases 4, 5 |
 | 9 | Favorites | S | Phase 6 |
 | 10 | Settings Screen | S | Phases 5, 9 |
@@ -866,28 +867,406 @@ struct SearchChannelsUseCase {
 
 ---
 
+## User Flow & Navigation Spec
+
+**Написано**: после Phase 6, перед Phase 7. Закрывает Decision #4 (переключение каналов в плеере), описывает все переходы между экранами сквозным образом и вскрывает один дефект в реализации Phase 6, который нужно исправить до того, как Phase 7/8/10 смогут полагаться на распространение `AppState`, как это задумано.
+
+### Карта экранов
+
+```
+RootView (TabView, 4 tabs)
+├── Channels   (ChannelListView)        — Phase 6, готово
+├── Guide      (EPGView)                 — Phase 8, заглушка
+├── Playlists  (PlaylistsView)           — Phase 5, готово (CRUD + индикатор активного)
+└── Settings   (SettingsView)            — Phase 10, заглушка
+
+Full-screen cover (поверх любой вкладки): Player  — Phase 7
+Sheets: AddPlaylistView (вкладка Playlists), EditPlaylistView (вкладка Settings, Phase 10)
+```
+
+**Уточнение зон ответственности вкладок** (сужает скоуп Phase 10): вкладка Playlists уже владеет CRUD-операциями над плейлистами и индикатором-галочкой активного плейлиста (сделано в Phase 5). Изначальная спецификация Phase 10 дублировала это на вкладке Settings. **Решение**: вкладка Settings НЕ дублирует список плейлистов. Она отвечает только за: жест "тап — сделать активным" на существующей вкладке Playlists (нужно добавить недостающий жест — сегодня галочка чисто отображается, ничего не устанавливает `appState.activePlaylistID` по действию пользователя), редактирование EPG URL для каждого плейлиста, очистку кэша и раздел About. Список файлов Phase 10 нужно будет пересмотреть, когда эта фаза будет реально планироваться.
+
+### Дефект, найденный при трассировке этих флоу (исправить до Phase 7)
+
+Сейчас в `RootView.swift`:
+```swift
+.task { await channelListViewModel.load() }
+```
+Обычный `.task` выполняется один раз за жизненный цикл view. Он **не** перезапускается, когда `appState.activePlaylistID` меняется позже (например, пользователь активировал другой плейлист). Это противоречит утверждению из плана Phase 6 и Decision #6 о том, что распространение через `@Observable` происходит автоматически — `@Observable` вызывает повторный рендер только того кода, который *читает* свойство внутри body view; он не перезапускает уже завершившийся `.task`. Конкретно: добавить плейлист на вкладке Playlists (первый плейлист → авто-активация), переключиться на вкладку Channels — сегодня там всё ещё может показываться устаревшее "No Playlists" до перезапуска приложения, поскольку view вкладок остаются живыми при переключении между вкладками.
+
+**Необходимое исправление**: `.task(id: appState.activePlaylistID) { await channelListViewModel.load() }`. Тот же паттерн понадобится для `EPGViewModel` в Phase 8. Это однострочная правка в `RootView.swift`, зафиксированная здесь, чтобы не забыть; внести можно когда угодно до того, как от этого поведения начнут зависеть Phase 8/10 (самой Phase 7 это не нужно, поскольку плеер владеет отвязанным снэпшотом — см. Flow 7).
+
+**Обновление**: формализовано и закрыто в Phase 6.5 → Шаг 1 (см. ниже, после Flow 9).
+
+### Flow 1 — Холодный старт / онбординг (нет плейлистов)
+
+1. Приложение запускается → `AppState.init()` читает `activePlaylistID` из `UserDefaults` (nil при чистой установке).
+2. `RootView` монтируется; `.task` всех вкладок запускаются параллельно.
+3. Вкладка Channels: `load()` видит nil → запрашивает плейлисты → пусто → "No Playlists" `ContentUnavailableView` (на момент написания этого раздела — текстовый CTA без deep link; Open Question #1 из Phase 6 **закрыт в Phase 6.5**: CTA программно переключает `TabView` на вкладку Playlists — см. Phase 6.5 → Шаг 2).
+4. Вкладка Guide (Phase 8): такое же пустое состояние, такая же текстовая подсказка.
+5. Вкладка Playlists: своё собственное "No Playlists" пустое состояние **с рабочей кнопкой "Add Playlist"** — сегодня это единственная действующая точка входа.
+6. Пользователь добавляет плейлист → `PlaylistsViewModel.add()` устанавливает `appState.activePlaylistID` (было nil) → после того как исправление выше будет внесено, Channels/Guide подхватят это автоматически при следующем фокусе; до этого момента им нужен перезапуск.
+
+### Flow 2 — Просмотр и воспроизведение (happy path)
+
+1. Вкладка Channels рендерит сетку для активного плейлиста.
+2. D-pad перемещает фокус между `CategorySidebarView` (`.focusSection()`) и сеткой (`.focusSection()`); карточки увеличиваются при фокусе.
+3. Выбор категории фильтрует `filteredChannels`; фильтр **эфемерный** — не сохраняется, сбрасывается на "All Channels" при следующем холодном старте.
+4. Выбор карточки канала устанавливает `viewModel.selectedChannel` → `.fullScreenCover` открывает Player с:
+   - выбранным `Channel`
+   - **контекстом воспроизведения (play context)**: упорядоченным массивом, из которого была выбрана карточка (`filteredChannels` на момент тапа) — это становится списком для серфинга Next/Previous (см. Flow 3).
+5. Кнопка Menu закрывает cover → возвращает на вкладку Channels ровно в том состоянии, в котором она была (позиция прокрутки, фокус, фильтр категории — ничего не разрушается, поскольку `ChannelListView`/`ViewModel` не пересоздаются при показе cover поверх них).
+
+### Flow 3 — Переключение каналов внутри плеера (закрывает Decision #4)
+
+**Решение**: реализовать переключение каналов Next/Previous в Phase 7, больше не откладывать. Данные, которые для этого нужны (упорядоченный массив `[Channel]`), уже есть на каждом экране, который может запустить плеер — дальнейшая отсрочка означала бы повторный пересмотр сигнатуры запуска плеера ещё раз позже.
+
+- **Контекст воспроизведения (play context)** = упорядоченный `[Channel]` + стартовый индекс, захватывается один раз при запуске:
+  - Из сетки Channels → `filteredChannels` (учитывает активный фильтр по категории/избранному)
+  - Из результатов поиска → `searchResults`
+  - Из Guide (Phase 8) → все каналы, отрендеренные в данный момент в таймлайне, в порядке строк
+- Доступно через `transportBarCustomMenuItems` как "Next Channel" / "Previous Channel".
+- `PlayerViewModel.switchChannel(direction:)`: вычисляет следующий индекс с **переходом по кругу** (последний → первый, первый → последний — непрерывный "серфинг каналов", соответствует ожиданиям от физического пульта), разрушает текущий `AVPlayerItem`, загружает новый поток, сбрасывает `retryCount` в 0, обновляет `customInfoViewController` (сейчас — название/лого канала; текущая EPG-программа — после выхода Phase 8).
+- Если в контексте воспроизведения ровно 1 канал (например, будущая точка входа с единственным каналом), пункты меню Next/Previous скрываются, а не просто становятся неактивными.
+- Добавление/удаление канала из избранного, пока плеер открыт, **не** мутирует уже захваченный массив контекста воспроизведения — он захвачен по значению при запуске.
+
+### Flow 4 — Поиск → воспроизведение
+
+1. Ввод 2+ символов в строке поиска на вкладке Channels запускает уже существующий поиск с debounce 300мс, ограниченный активным плейлистом.
+2. Выбор результата открывает Player с контекстом воспроизведения = текущий массив `searchResults` (серфинг Next/Previous остаётся в пределах того, что показано на экране — принцип наименьшего удивления).
+3. Выход из плеера возвращает на вкладку Channels с сохранёнными запросом и результатами.
+
+### Flow 5 — Guide → воспроизведение (зависимость от Phase 8, спроектировано сейчас)
+
+1. Пользователь прокручивает таймлайн EPG по горизонтали для каждой строки канала.
+2. Выбор **любой** ячейки программы — идущей сейчас или будущей — сразу переключает на живой поток этого канала. В скоупе нет ни перемотки, ни напоминаний/записи; ячейка будущей программы носит чисто информационный характер, её выбор всё равно просто включает канал вживую.
+3. Контекст воспроизведения = все каналы, отрендеренные в гиде в данный момент (порядок строк сверху вниз), поэтому Next/Previous ведёт себя так же, как из сетки.
+4. Выход из плеера возвращает в Guide с сохранённой позицией прокрутки.
+
+### Flow 6 — Избранное (Phase 9, спроектировано сейчас)
+
+1. Кнопка-сердечко на `ChannelCardView` (используется как есть в сетке Channels, результатах поиска и строках Guide) переключает избранное оптимистично, затем сохраняет через `ToggleFavoriteUseCase`.
+2. Избранное моделируется как **синтетический пункт в `CategorySidebarView`**, закреплённый под "All Channels" — его выбор фильтрует `filteredChannels` по `channel.isFavorite == true`. Используется тот же самый механизм фильтрации по категориям; отдельный экран или режим выбора не нужен.
+3. Transport bar плеера **не** получает переключатель избранного в Phase 9 — оставлено вне скоупа, чтобы не наслаивать сразу два новых элемента transport bar (Next/Previous и Favorite) поверх и без того рискованной работы над плеером.
+
+### Flow 7 — Смена активного плейлиста (вкладка Playlists/Settings)
+
+1. Пользователь тапает по неактивному ряду плейлиста, чтобы сделать его активным (Phase 10 добавляет недостающий жест; сегодня ряд только отображает индикатор).
+2. `appState.activePlaylistID` меняется → `AppState.didSet` сохраняет значение в `UserDefaults`.
+3. Channels/Guide перезагружаются после того, как исправление дефекта выше будет внесено.
+4. **Если Player сейчас открыт** и воспроизводит канал из *предыдущего* активного плейлиста: переключение активного плейлиста в другом месте **не** прерывает воспроизведение. Плеер владеет отвязанным снэпшотом (значение `Channel` + уже загруженный `AVPlayer` item) без живой привязки к `AppState`. Сетка Channels отразит новый активный плейлист только после того, как плеер будет закрыт и вкладка перезагрузится.
+5. **Граничный случай** — удаление плейлиста, которому принадлежит воспроизводимый сейчас канал: `DeletePlaylistUseCase` каскадно удаляет каналы через FK, но на воспроизведение это не влияет (URL потока уже разрешён и хранится в памяти, повторного запроса к БД не происходит). Next/Previous внутри всё ещё открытого плеера продолжает работать с контекстом воспроизведения в памяти, пока плеер не будет закрыт. Специальной обработки не требуется.
+
+### Flow 8 — Ошибки и retry во всех флоу
+
+1. Сбой потока во время воспроизведения → существующий дизайн retry из Phase 7 (3 попытки с экспоненциальной задержкой, 1с/2с/4с) → `PlayerErrorView` с кнопками Retry/Exit.
+2. Выход после исчерпанных попыток возвращает на тот экран, откуда был запущен плеер (Channels, Search или Guide), состояние сохраняется — принудительной перезагрузки нет.
+3. Сетевые сбои при просмотре (Channels/Guide) используют существующий паттерн `.alert`; Phase 11 дополнительно указывает, что Guide показывает устаревшие, но видимые данные EPG при сбое загрузки, а не блокирует UI.
+
+### Flow 9 — Уход в фон / возврат на передний план во время воспроизведения
+
+1. При `scenePhase != .active`, пока Player открыт, `PlayerViewModel` ставит воспроизведение на паузу (`.onChange(of: scenePhase)` в `PlayerView`) — приложения tvOS по умолчанию не получают системный PiP, поэтому продолжение стрима в фоне просто расходует трафик без видимой пользы.
+2. Возврат на передний план **не** возобновляет воспроизведение автоматически — пользователь нажимает Play/Pause на системном transport bar. Автовозобновление звука при возврате на передний план стало бы неожиданным; требование явного нажатия соответствует ожиданиям tvOS HIG.
+3. Существующее фоновое обновление плейлиста раз в 15 минут (`refreshActivePlaylistIfNeeded()`) никогда не должно затрагивать уже захваченный контекст воспроизведения уже запущенного `PlayerViewModel` — это гарантируется дизайном отвязанного снэпшота из Flow 7, нового кода не требуется, здесь это лишь явно задокументированная гарантия.
+
+---
+
+## Phase 6.5 — End-to-End Onboarding → Playback Flow (сквозной happy path)
+
+**Написано**: после «User Flow & Navigation Spec» (см. выше), перед Phase 7. Цель — дать владельцу продукта пройти весь пользовательский путь руками в симуляторе (пустое состояние → добавление плейлиста → список каналов → воспроизведение) прямо сейчас, не дожидаясь полноценной XL-фазы плеера. Формализует и закрывает три конкретные находки из Phase 6 / «User Flow & Navigation Spec»: дефект `.task` в `RootView.swift`, тупиковый CTA пустого состояния на вкладке Channels (Open Question #1 из Phase 6) и отсутствие вообще какого-либо экрана воспроизведения (сейчас там временная заглушка `Text("Playing: \(channel.name)")` в `ChannelListView.swift`).
+
+**Complexity**: S  
+**Depends on**: Phase 6 (Channel Browser)  
+**Сознательно вне скоупа** (остаётся в Phase 7 — см. «User Flow & Navigation Spec → Flow 3» и Phase 7 ниже): retry/backoff, `EPGInfoViewController`, `transportBarCustomMenuItems` (Next/Previous), обработка `playbackState == .error`. Эта фаза даёт самый простой рабочий видеоплеер — «воспроизводит поток и ничего больше».
+
+### Files to create / modify
+
+| Path | Action |
+|------|--------|
+| `StanisLoveTV/App/RootView.swift` | Modify — `.task` → `.task(id: appState.activePlaylistID)`; добавить `AppTab` enum + `@State private var selectedTab` для программного переключения вкладок |
+| `StanisLoveTV/Presentation/Channels/ChannelListView.swift` | Modify — добавить параметр `onNavigateToPlaylists: () -> Void`; кнопка в пустом состоянии "No Playlists"; заменить заглушку `fullScreenCover` на настоящий `PlayerView` |
+| `StanisLoveTV/Presentation/Player/PlayerViewModel.swift` | Create — минимальная версия: держит `channel` + `AVPlayer`, без retry/backoff/EPG. **Phase 7 расширит этот же файл, не создаст новый.** |
+| `StanisLoveTV/Presentation/Player/VideoPlayerView.swift` | Create — `UIViewControllerRepresentable`, оборачивает голый `AVPlayerViewController`. **Phase 7 модифицирует этот же файл.** |
+| `StanisLoveTV/Presentation/Player/PlayerView.swift` | Create — SwiftUI-обёртка с `.onExitCommand` / `.onPlayPauseCommand`. **Phase 7 модифицирует этот же файл.** |
+| `Tests/PresentationTests/PlayerViewModelTests.swift` | Create — 2 минимальных теста. **Phase 7 добавит тесты retry/backoff в этот же файл, не создаст новый.** |
+
+### Шаг 1 — Исправить дефект `.task` в RootView.swift
+
+Дефект уже описан в разделе «User Flow & Navigation Spec → Дефект, найденный при трассировке этих флоу» выше. Здесь он формализуется как первый шаг реализации.
+
+```swift
+// Было (MainTabView.body):
+.task { await channelListViewModel.load() }
+
+// Стало:
+.task(id: appState.activePlaylistID) { await channelListViewModel.load() }
+```
+
+**Важный нюанс, вскрытый при подготовке этой фазы**: сегодня `MainTabView` не хранит `AppState` напрямую — он только принимается в `init(appState:)` и пробрасывается в дочерние `@State`-вьюмодели (`PlaylistsViewModel(appState:)`, `ChannelListViewModel(appState:)`). Чтобы модификатор `.task(id:)` мог читать `appState.activePlaylistID` в `body`, `MainTabView` должен сам держать ссылку на `AppState`. Так как `RootView` уже читает `AppState` из окружения (`@Environment(AppState.self) private var appState`) и передаёт его в `MainTabView.init`, самый простой и не создающий второго источника истины вариант — добавить `@Environment(AppState.self) private var appState` и в саму `MainTabView` (оба обращения указывают на один и тот же инстанс, инжектированный один раз в `StanisLoveTVApp`):
+
+```swift
+private struct MainTabView: View {
+    @Environment(AppState.self) private var appState
+    @Environment(\.scenePhase) private var scenePhase
+    @State private var selectedTab: AppTab = .channels
+    @State private var playlistsViewModel: PlaylistsViewModel
+    @State private var channelListViewModel: ChannelListViewModel
+
+    init(appState: AppState) {
+        _playlistsViewModel = State(wrappedValue: PlaylistsViewModel(appState: appState))
+        _channelListViewModel = State(wrappedValue: ChannelListViewModel(appState: appState))
+    }
+
+    var body: some View {
+        TabView(selection: $selectedTab) {
+            ChannelListView(
+                viewModel: channelListViewModel,
+                onNavigateToPlaylists: { selectedTab = .playlists }
+            )
+            .tabItem { Label("Channels", systemImage: "play.tv") }
+            .tag(AppTab.channels)
+
+            EPGView()
+                .tabItem { Label("Guide", systemImage: "calendar") }
+                .tag(AppTab.guide)
+
+            PlaylistsView(viewModel: playlistsViewModel)
+                .tabItem { Label("Playlists", systemImage: "list.bullet") }
+                .tag(AppTab.playlists)
+
+            SettingsView()
+                .tabItem { Label("Settings", systemImage: "gear") }
+                .tag(AppTab.settings)
+        }
+        .task(id: appState.activePlaylistID) { await channelListViewModel.load() }
+        .task { await playlistsViewModel.load() }
+        .task(id: scenePhase) {
+            guard scenePhase == .active else { return }
+            await playlistsViewModel.refreshActivePlaylistIfNeeded()
+        }
+    }
+}
+
+enum AppTab: Hashable {
+    case channels, guide, playlists, settings
+}
+```
+
+Тот же паттерн (`.task(id: appState.activePlaylistID)`) в дальнейшем понадобится `EPGViewModel` в Phase 8 — уже отмечено в Decision #6.
+
+### Шаг 2 — CTA пустого состояния переключает вкладку (закрывает Open Question #1 из Phase 6)
+
+`ChannelListView` получает замыкание навигации через `init`, а не через `AppState` или ViewModel — это чисто UI-уровневая навигация, а не бизнес-логика, поэтому она не нарушает правило «никакой бизнес-логики во View» и не заставляет `ChannelListViewModel` знать о `TabView`/`AppTab`:
+
+```swift
+struct ChannelListView: View {
+    @Bindable var viewModel: ChannelListViewModel
+    var onNavigateToPlaylists: () -> Void = {}
+
+    // ...existing body unchanged...
+
+    @ViewBuilder
+    private var emptyStateView: some View {
+        if viewModel.hasActivePlaylists {
+            ContentUnavailableView(
+                "No Channels",
+                systemImage: "tv.slash",
+                description: Text("No channels found. Try refreshing the playlist in Settings.")
+            )
+        } else {
+            ContentUnavailableView {
+                Label("No Playlists", systemImage: "list.bullet.rectangle")
+            } description: {
+                Text("Add a playlist to get started.")
+            } actions: {
+                Button("Go to Playlists", action: onNavigateToPlaylists)
+            }
+        }
+    }
+}
+```
+
+Кнопка должна быть достижима фокусом пульта (стандартная `Button` внутри `ContentUnavailableView` на tvOS фокусируема без дополнительной работы).
+
+### Шаг 3 — Минимальный видеоплеер (заменяет заглушку `Text("Playing: ...")`)
+
+```swift
+// Presentation/Player/PlayerViewModel.swift
+import AVFoundation
+import Observation
+
+@MainActor
+@Observable
+final class PlayerViewModel {
+    let channel: Channel
+    let player: AVPlayer
+
+    init(channel: Channel) {
+        self.channel = channel
+        self.player = AVPlayer(url: channel.streamURL)
+    }
+
+    func play() { player.play() }
+    func togglePlayback() { player.rate == 0 ? player.play() : player.pause() }
+    func stop() { player.pause() }
+}
+```
+
+```swift
+// Presentation/Player/VideoPlayerView.swift
+import AVKit
+import SwiftUI
+
+struct VideoPlayerView: UIViewControllerRepresentable {
+    let player: AVPlayer
+
+    func makeUIViewController(context: Context) -> AVPlayerViewController {
+        let controller = AVPlayerViewController()
+        controller.player = player
+        controller.showsPlaybackControls = true
+        return controller
+    }
+
+    func updateUIViewController(_ uiViewController: AVPlayerViewController, context: Context) {}
+}
+```
+
+```swift
+// Presentation/Player/PlayerView.swift
+import SwiftUI
+
+struct PlayerView: View {
+    @State private var viewModel: PlayerViewModel
+    let onDismiss: () -> Void
+
+    init(channel: Channel, onDismiss: @escaping () -> Void) {
+        _viewModel = State(wrappedValue: PlayerViewModel(channel: channel))
+        self.onDismiss = onDismiss
+    }
+
+    var body: some View {
+        VideoPlayerView(player: viewModel.player)
+            .ignoresSafeArea()
+            .onAppear { viewModel.play() }
+            .onDisappear { viewModel.stop() }
+            .onExitCommand { onDismiss() }
+            .onPlayPauseCommand { viewModel.togglePlayback() }
+    }
+}
+```
+
+Wiring in `ChannelListView.swift` (replaces the `Text("Playing: ...")` placeholder):
+
+```swift
+.fullScreenCover(item: $viewModel.selectedChannel) { channel in
+    PlayerView(channel: channel, onDismiss: { viewModel.selectedChannel = nil })
+}
+```
+
+`AVPlayer` создаётся строго внутри `PlayerViewModel.init`, не во View struct — соответствует anti-pattern правилу из `CLAUDE.md`.
+
+### Явное отношение к Phase 7 (чтобы не было дублирования работы / конфликтов файлов)
+
+Phase 7 **модифицирует**, а не создаёт с нуля:
+- `PlayerViewModel.swift` — добавит `currentProgram`, `playbackState: PlaybackState`, `retryCount`/`retryTask`, `@ObservationIgnored @Dependency(\.networkService)`, `@ObservationIgnored @Dependency(\.fetchEPGUseCase)`, методы `startPlayback()` / `retry()` / `handleBack()`. Прямое владение `AVPlayer` может остаться как есть, либо быть делегировано новому `PlayerRepository`/`DefaultPlayerRepository` — это решается по месту в Phase 7 и не блокирует эту фазу; оба варианта совместимы с этим минимальным скелетом.
+- `VideoPlayerView.swift` — добавит `controller.customInfoViewController = EPGInfoViewController(...)` и зарезервирует `transportBarCustomMenuItems` для Next/Previous.
+- `PlayerView.swift` — добавит ветку `playbackState == .error` → `PlayerErrorView` оверлей.
+- `Tests/PresentationTests/PlayerViewModelTests.swift` — тот же файл получает новые `@Test` для retry/backoff поверх двух тестов, написанных в этой фазе.
+
+Phase 7 по-прежнему **создаёт с нуля**, без изменений в скоупе: `Domain/Repositories/PlayerRepository.swift`, `Data/Player/DefaultPlayerRepository.swift`, `Data/Player/StreamHealthChecker.swift`, `Presentation/Player/EPGInfoViewController.swift`, `Presentation/Player/PlayerErrorView.swift`.
+
+### Dependency Registration
+
+Нет новых `DependencyKey` в этой фазе — `AVPlayer` создаётся напрямую в `PlayerViewModel.init`, без сетевого слоя или репозитория. `PlayerRepository`/`DefaultPlayerRepository` (с DI-регистрацией) появятся в Phase 7 вместе с retry-логикой.
+
+### tvOS considerations
+
+- `.onExitCommand` на `PlayerView` закрывает `fullScreenCover` (кнопка Menu) — обязательное правило из `CLAUDE.md`.
+- `.onPlayPauseCommand` подключён уже сейчас — тривиально добавить, иначе кнопка Play/Pause на пульте будет мертва во время смоук-теста.
+- Никакого кастомного transport bar — используются встроенные элементы управления `AVPlayerViewController` (то же правило, что и в Phase 7).
+- `customInfoViewController` не устанавливается в этой фазе — оставлен как есть по умолчанию; это осознанно, Phase 7 добавит `EPGInfoViewController`.
+- Кнопка "Go to Playlists" в `ContentUnavailableView` должна быть фокусируема и иметь `accessibilityHint` вида "Opens the Playlists tab".
+- Поскольку в этой фазе нет retry/backoff, битый URL потока покажет либо системный экран ошибки `AVPlayerViewController`, либо замёрзший чёрный экран — приемлемо для ручного смоук-теста, **не приемлемо для продакшена** (это разрыв, который закрывает Phase 7).
+
+### Tests to write
+
+`Tests/PresentationTests/PlayerViewModelTests.swift`:
+```
+@Test func init_setsChannelProperty()
+@Test func init_createsPlayerWithChannelStreamURL()
+```
+
+Явных новых тестов на `ChannelListViewModel` не требуется: `onNavigateToPlaylists` — чистое View-уровневое замыкание без логики, которую имело бы смысл покрывать юнит-тестом на вьюмодели.
+
+Ручная проверка (для этой фазы она важнее, чем обычно, — сама фаза именно про то, чтобы пройти флоу руками):
+1. Чистая установка на симулятор → вкладка Channels показывает "No Playlists" с кнопкой "Go to Playlists".
+2. Тап по кнопке → `TabView` переключается на вкладку Playlists.
+3. Добавить плейлист с валидным M3U URL → дождаться парсинга → вернуться на вкладку Channels → каналы появляются **без перезапуска приложения** (проверяет исправление `.task(id:)`).
+4. Выбрать карточку канала → открывается `fullScreenCover`, поток начинает воспроизводиться через системные элементы управления `AVPlayerViewController`.
+5. Нажать Menu на пульте → cover закрывается, состояние вкладки Channels (позиция прокрутки, фильтр категории) не сброшено.
+
+### Опционально — визуальный polish (не входит в Definition of Done)
+
+Дизайн-спека и UI kit уже лежат в `illustrations/` (`Stanis_Love_TV_Design_Specification.pdf`, `Stanis_Love_TV_UI_Kit.svg`). По желанию владельца, в рамках этой же фазы или отдельным PR можно:
+- Заменить системные иллюстрации `ContentUnavailableView` на кастомные ассеты из UI kit для пустых состояний Channels/Playlists.
+- Свериться со спекой по отступам/типографике уже реализованных `ChannelCardView`/`CategorySidebarView` (Phase 6) и точечно поправить расхождения с `Spacing`/`Typography`.
+
+Это explicitly не входит в Definition of Done ниже — чтобы не раздувать фазу перед Phase 7. Оставлено на усмотрение владельца.
+
+### Open Questions
+
+1. Нужно ли включать опциональный визуальный polish (см. выше) в Definition of Done этой фазы, или он остаётся полностью отдельной задачей? План по умолчанию считает его вне скоупа.
+2. Прямое владение `AVPlayer` в `PlayerViewModel` — оставить как есть в Phase 7 (просто добавить retry-логику в тот же класс) или вынести в `PlayerRepository`/`DefaultPlayerRepository` сразу ради тестируемости? Не блокирует эту фазу, но стоит решить до начала детального планирования Phase 7.
+
+### Definition of Done
+
+- `RootView.swift` использует `.task(id: appState.activePlaylistID)`; проверено переключением активного плейлиста на вкладке Playlists — вкладка Channels перезагружается без перезапуска приложения.
+- Кнопка пустого состояния на вкладке Channels программно переключает `TabView` на вкладку Playlists — тупикового CTA больше нет.
+- Тап по карточке канала открывает полноэкранный `AVPlayerViewController` и начинает воспроизведение `channel.streamURL`.
+- Кнопка Menu стабильно закрывает плеер и возвращает на предыдущий экран в неизменном состоянии.
+- `PlayerViewModel`/`VideoPlayerView`/`PlayerView` скомпилированы и структурированы так, что Phase 7 сможет расширить их на месте — без переименований и переносов файлов.
+- Ноль регрессий в существующих тестах Phase 5/6.
+
+### Статус: выполнено (2026-07-29)
+
+Весь сквозной путь (пустое состояние → добавление плейлиста → список каналов с группировкой → воспроизведение) пройден руками в tvOS Simulator. По ходу реализации всплыли четыре бага, не предусмотренные исходным текстом фазы — все найдены и исправлены:
+
+1. **`@Table` без явного имени** (`PlaylistRecord`, `ChannelRecord`, `FavoriteRecord`, `EPGProgramRecord`) — SQLiteData по умолчанию выводит имя таблицы как lower-camel-case множественное число от имени типа (`PlaylistRecord` → `"playlistRecords"`), а миграции создают `"playlists"`, `"channels"` и т.д. Без явного `@Table("playlists")` каждая запись в БД падала с `SQLite error 1: no such table`, которая расплывчато маскировалась под сетевую ошибку (см. пункт 3). Исправлено во всех четырёх `@Table`-структурах.
+2. **Отсутствие ATS-исключений** — в проекте не было ни одного ключа `NSAppTransportSecurity`, а плейлисты/логотипы/потоки произвольных IPTV-провайдеров сплошь и рядом на `http`. Добавлен `StanisLoveTV/App/Info.plist` с `NSAllowsArbitraryLoads = true`, подключён через `INFOPLIST_FILE` при сохранённом `GENERATE_INFOPLIST_FILE = YES` (слияние, не замена). Осознанный выбор для IPTV-приложения: домены плейлистов заранее не известны, точечные `NSExceptionDomains` не применимы.
+3. **`AppError.init(_:)` слишком широко перехватывает ошибки** — любая нераспознанная ошибка (включая, как выяснилось, `SQLite error` из пункта 1) превращалась в `.networkUnavailable` ("No internet connection"), что сильно затрудняло диагностику. Не переписывали целиком (не в скоупе фазы), но это стоит учитывать в Phase 7/11 при добавлении error-состояний.
+4. **`AddPlaylistView` обрезал только `.whitespaces`, не `.whitespacesAndNewlines`** — вставленная через `⌘V` ссылка с завершающим переносом строки проходила валидацию URL, но падала уже на сетевом вызове. Исправлено на обеих `TextField` (M3U URL, EPG URL) и в имени плейлиста.
+5. **`M3UParser` не поддерживал `#EXTGRP:`** — часть провайдеров (например, hls.gd) не кладёт `group-title` в атрибуты `#EXTINF`, а указывает группу отдельной строкой `#EXTGRP:`. Парсер её игнорировал как обычный комментарий, из-за чего все каналы проваливались в одну безымянную категорию. Добавлен fallback: `group-title` атрибут (если есть) → иначе `#EXTGRP:` → иначе `""`. Покрыто тремя тестами в `M3UParserTests.swift`.
+
+Сверх исходного скоупа фазы добавлен dev-инструмент — оверлей технической статистики воспроизведения (битрейт, разрешение, число stalls, состояние буфера) в правом верхнем углу плеера, под флагом `PlayerDebugFlags.showStatsOverlay` (`Core/Constants/DebugFlags.swift`), включается/выключается одной строкой без UI. Источник данных — `AVPlayerItemAccessLog` + KVO на `AVPlayerItem`.
+
+**Известное открытое наблюдение (не блокер)**: в tvOS Simulator при воспроизведении реального сетевого HLS-потока звук идёт, а видео-кадр не рендерится, хотя `presentationSize` корректно определяется декодером (например, 1934×1080) — то есть видеодорожка декодируется, но не композитится на экран. Похоже на ограничение Simulator (`AVPlayerLayer`/Metal), а не баг приложения; требует подтверждения на физическом Apple TV.
+
+---
+
 ## Phase 7 — Video Player
 
-**Goal**: Full-screen `AVPlayerViewController`, HLS stream playback, error display with retry, EPG current programme in transport bar's custom info area.
+**Goal**: Full-screen `AVPlayerViewController`, HLS stream playback, error display with retry, EPG current programme in transport bar's custom info area, Next/Previous channel switching within the launching screen's play context.
 
 **Complexity**: XL  
-**Depends on**: Phase 6  
+**Depends on**: Phase 6.5 (minimal player skeleton already exists — this phase extends it in place)  
 **HIGH RISK**: `AVPlayer` lifecycle, HLS error handling, stream retry with backoff. `AVPlayerViewController` must be correctly wrapped in `UIViewControllerRepresentable` or the system controls break. Player must live in `PlayerViewModel`, never in a View struct.
 
-**NOTE**: In-player channel switching (next/previous channel actions) is **deferred** to a future design session. The transport bar `transportBarCustomMenuItems` slot is reserved but not implemented in this phase.
+**NOTE**: Channel switching (next/previous) is now in scope for this phase — see "User Flow & Navigation Spec → Flow 3" above for the play-context design (ordered `[Channel]` + index, captured at launch, wrap-around, hidden when the context has 1 channel). `transportBarCustomMenuItems` hosts the Next/Previous actions.
 
-### Files to create
+### Files to create / modify
 
-| Path | Notes |
-|------|-------|
-| `StanisLoveTV/Domain/Repositories/PlayerRepository.swift` | protocol exposing player actions |
-| `StanisLoveTV/Data/Player/DefaultPlayerRepository.swift` | owns `AVPlayer`, implements protocol |
-| `StanisLoveTV/Data/Player/StreamHealthChecker.swift` | HEAD request, 3s timeout, retries |
-| `StanisLoveTV/Presentation/Player/PlayerViewModel.swift` | `@MainActor @Observable` |
-| `StanisLoveTV/Presentation/Player/VideoPlayerView.swift` | `UIViewControllerRepresentable` for `AVPlayerViewController` |
-| `StanisLoveTV/Presentation/Player/PlayerView.swift` | SwiftUI wrapper managing `.fullScreenCover` |
-| `StanisLoveTV/Presentation/Player/EPGInfoViewController.swift` | `UIViewController` for `customInfoViewController` |
-| `StanisLoveTV/Presentation/Player/PlayerErrorView.swift` | Error overlay with retry button |
+Phase 6.5 already created a minimal `PlayerViewModel` / `VideoPlayerView` / `PlayerView` skeleton (plain playback, no retry, no EPG info, no channel switching). This phase **extends those same files in place** — do not rename or recreate them.
+
+| Path | Action | Notes |
+|------|--------|-------|
+| `StanisLoveTV/Domain/Repositories/PlayerRepository.swift` | Create | protocol exposing player actions |
+| `StanisLoveTV/Data/Player/DefaultPlayerRepository.swift` | Create | owns `AVPlayer`, implements protocol |
+| `StanisLoveTV/Data/Player/StreamHealthChecker.swift` | Create | HEAD request, 3s timeout, retries |
+| `StanisLoveTV/Presentation/Player/PlayerViewModel.swift` | **Modify** (created in Phase 6.5) | add `currentProgram`, `playbackState`, `retryCount`/`retryTask`, `@Dependency(\.networkService)`, `@Dependency(\.fetchEPGUseCase)`, `startPlayback()`/`retry()`/`handleBack()` |
+| `StanisLoveTV/Presentation/Player/VideoPlayerView.swift` | **Modify** (created in Phase 6.5) | add `customInfoViewController`, reserve `transportBarCustomMenuItems` |
+| `StanisLoveTV/Presentation/Player/PlayerView.swift` | **Modify** (created in Phase 6.5) | add `playbackState == .error` → `PlayerErrorView` branch |
+| `StanisLoveTV/Presentation/Player/EPGInfoViewController.swift` | Create | `UIViewController` for `customInfoViewController` |
+| `StanisLoveTV/Presentation/Player/PlayerErrorView.swift` | Create | Error overlay with retry button |
 
 ### PlayerViewModel
 
@@ -959,7 +1338,7 @@ This protocol allows `PlayerViewModel` to be tested without a real `AVPlayer`.
 
 ### Tests to write
 
-`Tests/PresentationTests/PlayerViewModelTests.swift`:
+`Tests/PresentationTests/PlayerViewModelTests.swift` (extends the file created in Phase 6.5 — add these `@Test`s alongside the existing `init_setsChannelProperty` / `init_createsPlayerWithChannelStreamURL`):
 ```
 @Test func startPlayback_setsLoadingState()
 @Test func playbackFailure_triggersRetry()
@@ -1377,6 +1756,7 @@ All `DependencyValues` extensions consolidated in `Core/Dependencies/DependencyV
 | M3U `url-tvg` points to invalid or huge XMLTV file | LOW | 4, 8 | `checkStreamHealth` before downloading. Stream to cache file, not memory. |
 | Foreground refresh fires too frequently | LOW | 5 | 15-minute throttle via `AppConstants.playlistRefreshInterval` in `Core/Constants/AppConstants.swift`. Adjust the constant to change the interval without touching business logic. |
 | Stream URL force-unwrap in domainModel | LOW | 3 | Validated at M3U parse time. Document assumption in code comment. |
+| Minimal Phase 6.5 player has no retry/backoff | LOW | 6.5 | Acceptable only for manual smoke-testing in the simulator; a broken stream shows the system AVKit error UI or a frozen frame instead of `PlayerErrorView`. Phase 7 closes this gap — do not ship Phase 6.5's player standalone to TestFlight/production. |
 
 ---
 
@@ -1389,7 +1769,8 @@ All open questions have been answered and incorporated above. Zero open question
 | 1 | EPG URL source | Optional per-playlist field. User can enter manually in Settings. If blank, auto-extracted from M3U header `url-tvg` attribute. Manual entry takes priority over extracted value. |
 | 2 | Multi-playlist deduplication | No deduplication. Duplicate channels from separate playlists appear as separate entries when each playlist is active. |
 | 3 | Background playlist refresh | Auto-refresh on app foreground (`ScenePhase.active`). Throttled to max once per `AppConstants.playlistRefreshInterval` (15 minutes, defined in `Core/Constants/AppConstants.swift`). User can also refresh manually from Settings. |
-| 4 | Player channel switching | Deferred — will be designed in a future session. Transport bar slot reserved. |
+| 4 | Player channel switching | Resolved in "User Flow & Navigation Spec → Flow 3" (added post-Phase 6). In scope for Phase 7: Next/Previous via `transportBarCustomMenuItems`, play context = ordered `[Channel]` + index captured at launch (grid/search/guide), wrap-around, hidden when context has 1 channel. |
 | 5 | Channel browser scope | Only the currently active playlist. Active playlist is selected in Settings. Only one playlist active at a time. `AppState` reads/writes `activePlaylistID` from UserDefaults; injected at root via `.environment(appState)`. |
-| 6 | Active playlist propagation mechanism | `@Observable AppState` injected via `@Environment`. `Notification.Name("activePlaylistDidChange")` is **not used** anywhere. `ChannelListViewModel` and `EPGViewModel` receive `AppState` via init and observe `appState.activePlaylistID` directly. `SettingsViewModel` writes `appState.activePlaylistID` to propagate changes. |
+| 6 | Active playlist propagation mechanism | `@Observable AppState` injected via `@Environment`. `Notification.Name("activePlaylistDidChange")` is **not used** anywhere. `ChannelListViewModel` and `EPGViewModel` receive `AppState` via init and observe `appState.activePlaylistID` directly. `SettingsViewModel` writes `appState.activePlaylistID` to propagate changes. **Caveat found post-Phase 6** (see "User Flow & Navigation Spec → Correctness gap"): `@Observable` only auto-invalidates code that *reads* the property inside a view body — it does not re-run an already-completed `.task`. `RootView` must key the load task as `.task(id: appState.activePlaylistID)`, not a bare `.task`, or the reload never fires after the first launch. |
 | 7 | Foreground refresh throttle interval | 15 minutes confirmed. Constant: `AppConstants.playlistRefreshInterval = 15 * 60` in `StanisLoveTV/Core/Constants/AppConstants.swift`. |
+| 8 | Channels empty-state CTA (Open Question #1 из Phase 6) | Resolved in Phase 6.5 → Шаг 2. `ChannelListView` receives an `onNavigateToPlaylists: () -> Void` closure from `MainTabView`; the "No Playlists" `ContentUnavailableView` action button calls it, which sets `selectedTab = .playlists` on the `TabView(selection:)` binding. No deep link, no `NavigationPath` involved — pure tab-selection state local to `MainTabView`. |

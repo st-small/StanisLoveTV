@@ -1,7 +1,7 @@
 import Foundation
 import SQLiteData
 
-@Table nonisolated struct EPGProgramRecord: Identifiable {
+@Table("epgPrograms") nonisolated struct EPGProgramRecord: Identifiable {
     let id: UUID
     var channelID: String
     var title: String
