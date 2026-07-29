@@ -89,6 +89,47 @@ struct M3UParserTests {
         #expect(result.channels[0].name == "My Channel")
     }
 
+    // MARK: - #EXTGRP fallback (providers without group-title attribute, e.g. hls.gd)
+
+    @Test func extgrpLine_usedAsGroupTitleWhenAttributeAbsent() throws {
+        let content = """
+        #EXTM3U
+        #EXTINF:0 tvg-id="ch001" tvg-name="Channel One",Channel One
+        #EXTGRP:1. Federal/Федеральные
+        http://stream.example.com/ch1.m3u8
+        """
+        let result = try parser.parse(content)
+        #expect(result.channels.count == 1)
+        #expect(result.channels[0].groupTitle == "1. Federal/Федеральные")
+    }
+
+    @Test func groupTitleAttribute_takesPrecedenceOverExtgrp() throws {
+        let content = """
+        #EXTM3U
+        #EXTINF:-1 group-title="Sports",Channel One
+        #EXTGRP:Ignored Group
+        http://stream.example.com/ch1.m3u8
+        """
+        let result = try parser.parse(content)
+        #expect(result.channels.count == 1)
+        #expect(result.channels[0].groupTitle == "Sports")
+    }
+
+    @Test func extgrpDoesNotLeakIntoNextChannelWithoutItsOwnGroup() throws {
+        let content = """
+        #EXTM3U
+        #EXTINF:-1,Channel One
+        #EXTGRP:News
+        http://stream.example.com/ch1.m3u8
+        #EXTINF:-1,Channel Two
+        http://stream.example.com/ch2.m3u8
+        """
+        let result = try parser.parse(content)
+        #expect(result.channels.count == 2)
+        #expect(result.channels[0].groupTitle == "News")
+        #expect(result.channels[1].groupTitle == "")
+    }
+
     // MARK: - Malformed input
 
     @Test func nonHttpStreamURL_skipped() throws {

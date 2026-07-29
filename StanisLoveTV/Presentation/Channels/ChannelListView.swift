@@ -2,6 +2,7 @@ import SwiftUI
 
 struct ChannelListView: View {
     @Bindable var viewModel: ChannelListViewModel
+    var onNavigateToPlaylists: () -> Void = {}
 
     private let gridColumns = [
         GridItem(.adaptive(minimum: TVSize.channelCardWidth), spacing: Spacing.md)
@@ -36,8 +37,7 @@ struct ChannelListView: View {
             }
         }
         .fullScreenCover(item: $viewModel.selectedChannel) { channel in
-            Text("Playing: \(channel.name)")
-                .onExitCommand { viewModel.selectedChannel = nil }
+            PlayerView(channel: channel, onDismiss: { viewModel.selectedChannel = nil })
         }
         .alert("Error", isPresented: Binding(
             get: { viewModel.error != nil },
@@ -94,11 +94,14 @@ struct ChannelListView: View {
                 description: Text("No channels found. Try refreshing the playlist in Settings.")
             )
         } else {
-            ContentUnavailableView(
-                "No Playlists",
-                systemImage: "list.bullet.rectangle",
-                description: Text("Add a playlist to get started. Go to the Playlists tab.")
-            )
+            ContentUnavailableView {
+                Label("No Playlists", systemImage: "list.bullet.rectangle")
+            } description: {
+                Text("Add a playlist to get started.")
+            } actions: {
+                Button("Go to Playlists", action: onNavigateToPlaylists)
+                    .accessibilityHint("Opens the Playlists tab")
+            }
         }
     }
 }

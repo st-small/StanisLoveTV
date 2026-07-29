@@ -17,21 +17,33 @@ struct M3UParser {
         let epgURL = extractEPGURL(from: firstLine)
         var channels: [Channel] = []
         var pendingExtinf: String?
+        var pendingGroup: String?
 
         for line in lines.dropFirst() {
             if line.isEmpty { continue }
 
             if line.uppercased().hasPrefix("#EXTINF:") {
                 pendingExtinf = line
+                pendingGroup = nil
+                continue
+            }
+
+            // Some providers (e.g. no group-title attribute in #EXTINF) put the group
+            // on its own #EXTGRP: line between #EXTINF and the stream URL.
+            if line.uppercased().hasPrefix("#EXTGRP:") {
+                pendingGroup = String(line.dropFirst("#EXTGRP:".count))
+                    .trimmingCharacters(in: .whitespaces)
                 continue
             }
 
             if line.hasPrefix("#") { continue }
 
             guard let extinf = pendingExtinf else { continue }
+            let group = pendingGroup
             pendingExtinf = nil
+            pendingGroup = nil
 
-            guard let channel = parseChannel(extinf: extinf, urlString: line) else { continue }
+            guard let channel = parseChannel(extinf: extinf, urlString: line, groupOverride: group) else { continue }
             channels.append(channel)
         }
 
@@ -46,7 +58,7 @@ struct M3UParser {
         return nil
     }
 
-    private nonisolated func parseChannel(extinf: String, urlString: String) -> Channel? {
+    private nonisolated func parseChannel(extinf: String, urlString: String, groupOverride: String?) -> Channel? {
         guard
             let url = URL(string: urlString),
             url.scheme == "http" || url.scheme == "https"
@@ -55,7 +67,7 @@ struct M3UParser {
         let (attributesPart, displayName) = splitExtinfLine(extinf)
         let tvgID = extractAttribute("tvg-id", from: attributesPart)
         let logoRaw = extractAttribute("tvg-logo", from: attributesPart)
-        let groupTitle = extractAttribute("group-title", from: attributesPart) ?? ""
+        let groupTitle = extractAttribute("group-title", from: attributesPart) ?? groupOverride ?? ""
         let tvgName = extractAttribute("tvg-name", from: attributesPart)
         let name = displayName.isEmpty ? (tvgName ?? "Unknown") : displayName
 

@@ -208,4 +208,24 @@ struct ChannelListViewModelTests {
             #expect(titles == ["Kids", "Movies", "Sports"])
         }
     }
+
+    @Test("categories with numeric prefixes sort naturally, not lexicographically")
+    func categories_withNumericPrefixes_sortNaturally() async {
+        let appState = AppState()
+        appState.activePlaylistID = UUID()
+        let channels = [
+            Channel.mock(groupTitle: "10. Music"),
+            Channel.mock(groupTitle: "1. Federal"),
+            Channel.mock(groupTitle: "2. News"),
+        ]
+
+        await withDependencies {
+            $0.fetchChannelsUseCase.execute = { _ in channels }
+        } operation: {
+            let viewModel = makeViewModel(appState: appState)
+            await viewModel.load()
+            let titles = viewModel.categories.map(\.groupTitle)
+            #expect(titles == ["1. Federal", "2. News", "10. Music"])
+        }
+    }
 }

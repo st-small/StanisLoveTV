@@ -26,10 +26,16 @@ struct AddPlaylistView: View {
 
                 TextField("M3U URL (required)", text: $m3uURLText)
                     .focused($focusedField, equals: .m3uURL)
+                    .keyboardType(.URL)
+                    .textInputAutocapitalization(.never)
+                    .autocorrectionDisabled()
 
                 VStack(alignment: .leading, spacing: Spacing.xs) {
                     TextField("EPG/XMLTV URL (optional)", text: $epgURLText)
                         .focused($focusedField, equals: .epgURL)
+                        .keyboardType(.URL)
+                        .textInputAutocapitalization(.never)
+                        .autocorrectionDisabled()
 
                     Text("Leave blank to auto-detect from playlist header.")
                         .font(.caption)
@@ -49,7 +55,7 @@ struct AddPlaylistView: View {
                 Button("Add Playlist") {
                     Task { await submit() }
                 }
-                .disabled(m3uURLText.trimmingCharacters(in: .whitespaces).isEmpty || isAdding)
+                .disabled(m3uURLText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || isAdding)
                 .buttonStyle(.borderedProminent)
             }
         }
@@ -67,14 +73,14 @@ struct AddPlaylistView: View {
     }
 
     private func submit() async {
-        let rawURL = m3uURLText.trimmingCharacters(in: .whitespaces)
+        let rawURL = m3uURLText.trimmingCharacters(in: .whitespacesAndNewlines)
         guard let url = URL(string: rawURL), ["http", "https"].contains(url.scheme) else {
             validationError = "Enter a valid http or https URL."
             return
         }
 
         let epgURL: URL?
-        let rawEPG = epgURLText.trimmingCharacters(in: .whitespaces)
+        let rawEPG = epgURLText.trimmingCharacters(in: .whitespacesAndNewlines)
         if rawEPG.isEmpty {
             epgURL = nil
         } else if let parsed = URL(string: rawEPG), ["http", "https"].contains(parsed.scheme) {
@@ -84,9 +90,9 @@ struct AddPlaylistView: View {
             return
         }
 
-        let name = nameText.trimmingCharacters(in: .whitespaces).isEmpty
+        let name = nameText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
             ? (url.host ?? "Playlist")
-            : nameText.trimmingCharacters(in: .whitespaces)
+            : nameText.trimmingCharacters(in: .whitespacesAndNewlines)
 
         validationError = nil
         isAdding = true

@@ -88,6 +88,6 @@ final class ChannelListViewModel {
         }
         return counts
             .map { Category(groupTitle: $0.key, channelCount: $0.value) }
-            .sorted { $0.groupTitle < $1.groupTitle }
+            .sorted { $0.groupTitle.localizedStandardCompare($1.groupTitle) == .orderedAscending }
     }
 }
