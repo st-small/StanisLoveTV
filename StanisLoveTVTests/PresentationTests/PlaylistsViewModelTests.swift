@@ -26,33 +26,33 @@ struct PlaylistsViewModelTests {
     }
 
     @Test("add() appends playlist to list")
-    func add_appendsToList() async {
+    func add_appendsToList() async throws {
         let fetched = [Playlist.mock()]
         let url = URL(string: "http://example.com/test.m3u")!
 
-        await withDependencies {
+        try await withDependencies {
             $0.addPlaylistUseCase.execute = { _ in }
             $0.fetchPlaylistsUseCase.execute = { fetched }
         } operation: {
             let viewModel = makeViewModel()
-            await viewModel.add(url: url, name: "Test", epgURL: nil)
+            try await viewModel.add(url: url, name: "Test", epgURL: nil)
             #expect(viewModel.playlists.count == 1)
         }
     }
 
     @Test("add() sets activePlaylistID when none is set")
-    func add_setsActivePlaylistIDWhenNone() async {
+    func add_setsActivePlaylistIDWhenNone() async throws {
         let fetched = [Playlist.mock()]
         let url = URL(string: "http://example.com/test.m3u")!
         var capturedID: UUID?
 
-        await withDependencies {
+        try await withDependencies {
             $0.addPlaylistUseCase.execute = { _ in }
             $0.fetchPlaylistsUseCase.execute = { fetched }
         } operation: {
             let appState = AppState()
             let viewModel = PlaylistsViewModel(appState: appState)
-            await viewModel.add(url: url, name: "Test", epgURL: nil)
+            try await viewModel.add(url: url, name: "Test", epgURL: nil)
             capturedID = appState.activePlaylistID
         }
 
