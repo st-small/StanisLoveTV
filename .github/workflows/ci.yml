@@ -39,7 +39,7 @@ jobs:
             spm-${{ runner.os }}-
 
       - name: Install xcbeautify
-        run: brew install xcbeautify
+        run: brew list xcbeautify &>/dev/null || brew install xcbeautify
 
       - name: Resolve package dependencies
         run: xcodebuild -resolvePackageDependencies -project "$PROJECT" -scheme "$SCHEME"
