@@ -48,7 +48,7 @@ jobs:
         id: destination
         run: |
           DEVICE_UDID=$(xcrun simctl list devices available -j \
-            | jq -r '.devices | to_entries[] | select(.key | contains("tvOS")) | .value[] | select(.name == "Apple TV") | .udid' \
+            | jq -r '.devices | to_entries | sort_by(.key) | reverse[] | select(.key | contains("tvOS")) | .value[] | select(.name == "Apple TV") | .udid' \
             | head -n1)
           if [ -z "$DEVICE_UDID" ]; then
             echo "No Apple TV simulator found" >&2
