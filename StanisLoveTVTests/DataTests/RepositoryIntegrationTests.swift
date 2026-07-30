@@ -115,7 +115,7 @@ struct RepositoryIntegrationTests {
         }
 
         let results = try await withDependencies { $0.database = db } operation: {
-            try await DefaultChannelRepository().search(query: "sport")
+            try await DefaultChannelRepository().search(query: "sport", playlistID: playlist.id)
         }
         #expect(results.count == 1)
         #expect(results[0].name == "Sport News")

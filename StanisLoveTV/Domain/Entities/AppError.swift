@@ -1,6 +1,6 @@
 import Foundation
 
-enum AppError: LocalizedError {
+enum AppError: LocalizedError, Equatable {
     case networkUnavailable
     case playbackFailed(String)
     case playlistParseError(String)

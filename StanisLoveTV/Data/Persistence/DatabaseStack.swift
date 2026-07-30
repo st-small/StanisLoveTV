@@ -9,7 +9,12 @@ struct DatabaseStack {
 extension DatabaseStack {
     static func live() throws -> DatabaseStack {
         let url = try FileManager.default
-            .url(for: .applicationSupportDirectory, in: .userDomainMask, appropriateFor: nil, create: true)
+            .url(
+                for: .cachesDirectory,
+                in: .userDomainMask,
+                appropriateFor: nil,
+                create: true
+            )
             .appendingPathComponent("stanislove.sqlite")
         var config = Configuration()
         config.foreignKeysEnabled = true

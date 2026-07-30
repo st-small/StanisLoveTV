@@ -98,6 +98,8 @@ Agents live in `.claude/agents/`. Claude routes automatically, or use explicit c
 
 **slt-planner**: reads project context + existing plans → creates `.claude/plans/<feature>.md` with layers, steps, schema changes, DI registrations, tests, tvOS notes, DoD.
 
+Plans (`.claude/plans/*.md`, including `master-plan.md`) are written in **Russian**. Code, identifiers, comments, and commit messages stay in English.
+
 **reviewer**: reads `git diff` → runs 6 checklists (Architecture, SQLiteData, DI, tvOS/SwiftUI, Concurrency, Tests) → Critical 🔴 / Warnings 🟡 / Suggestions 🟢 + verdict.
 
 ---
