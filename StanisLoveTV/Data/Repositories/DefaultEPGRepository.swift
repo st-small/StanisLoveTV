@@ -41,7 +41,7 @@ final class DefaultEPGRepository: EPGRepository {
             }
 
             try EPGProgramRecord
-                .where { $0.fetchedAt.lt(cutoff) }
+                .where { $0.endTime.lt(cutoff) }
                 .delete()
                 .execute(database)
         }
