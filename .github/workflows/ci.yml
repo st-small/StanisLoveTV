@@ -66,6 +66,7 @@ jobs:
             -destination "platform=tvOS Simulator,id=${{ steps.destination.outputs.udid }}" \
             -resultBundlePath TestResults.xcresult \
             -enableCodeCoverage YES \
+            -skipMacroValidation \
             | xcbeautify --renderer github-actions
 
       - name: Upload test results
