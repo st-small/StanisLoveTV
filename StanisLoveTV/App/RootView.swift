@@ -47,10 +47,17 @@ private struct MainTabView: View {
                 .tag(AppTab.settings)
         }
         .task(id: appState.activePlaylistID) { await channelListViewModel.load() }
-        .task { await playlistsViewModel.load() }
+        .task {
+            await playlistsViewModel.load()
+            await playlistsViewModel.rehydrateCacheIfNeeded()
+        }
         .task(id: scenePhase) {
             guard scenePhase == .active else { return }
             await playlistsViewModel.refreshActivePlaylistIfNeeded()
+        }
+        .onChange(of: appState.isRehydratingCache) { wasRehydrating, isRehydrating in
+            guard wasRehydrating, !isRehydrating else { return }
+            Task { await channelListViewModel.load() }
         }
     }
 }

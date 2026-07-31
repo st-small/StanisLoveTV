@@ -17,6 +17,7 @@ final class PlaylistsViewModel {
     @ObservationIgnored @Dependency(\.addPlaylistUseCase) private var addPlaylist
     @ObservationIgnored @Dependency(\.deletePlaylistUseCase) private var deletePlaylist
     @ObservationIgnored @Dependency(\.refreshPlaylistUseCase) private var refreshPlaylist
+    @ObservationIgnored @Dependency(\.rehydrateCacheUseCase) private var rehydrateCache
 
     init(appState: AppState) {
         self.appState = appState
@@ -69,6 +70,18 @@ final class PlaylistsViewModel {
         do {
             try await refreshPlaylist.execute(id)
             playlists = try await fetchPlaylists.execute()
+        } catch {
+            self.error = AppError(error)
+        }
+    }
+
+    /// Re-downloads and re-parses any saved playlist whose SQLite channel cache is
+    /// empty — the case after tvOS purges `Library/Caches`. No-op if nothing was purged.
+    func rehydrateCacheIfNeeded() async {
+        appState.isRehydratingCache = true
+        defer { appState.isRehydratingCache = false }
+        do {
+            try await rehydrateCache.execute()
         } catch {
             self.error = AppError(error)
         }

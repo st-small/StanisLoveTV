@@ -26,6 +26,7 @@ final class ChannelListViewModel {
     }
 
     var hasActivePlaylists: Bool { appState.activePlaylistID != nil }
+    var isRestoringCache: Bool { appState.isRehydratingCache }
 
     var filteredChannels: [Channel] {
         guard let cat = selectedCategory else { return channels }

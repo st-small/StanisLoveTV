@@ -138,4 +138,39 @@ struct PlaylistsViewModelTests {
             #expect(refreshCalled == true)
         }
     }
+
+    @Test("rehydrateCacheIfNeeded toggles isRehydratingCache during run")
+    func rehydrateCacheIfNeeded_togglesIsRehydratingCacheDuringRun() async {
+        let appState = AppState()
+        var observedDuringRun = false
+
+        await withDependencies {
+            $0.rehydrateCacheUseCase.execute = {
+                observedDuringRun = appState.isRehydratingCache
+            }
+        } operation: {
+            let viewModel = PlaylistsViewModel(appState: appState)
+            #expect(appState.isRehydratingCache == false)
+            await viewModel.rehydrateCacheIfNeeded()
+        }
+
+        #expect(observedDuringRun == true)
+        #expect(appState.isRehydratingCache == false)
+    }
+
+    @Test("rehydrateCacheIfNeeded is a no-op when the use case has nothing to do")
+    func rehydrateCacheIfNeeded_noOpWhenAllPlaylistsAlreadyHaveChannels() async {
+        var executeCallCount = 0
+        let appState = AppState()
+
+        await withDependencies {
+            $0.rehydrateCacheUseCase.execute = { executeCallCount += 1 }
+        } operation: {
+            let viewModel = PlaylistsViewModel(appState: appState)
+            await viewModel.rehydrateCacheIfNeeded()
+            #expect(viewModel.error == nil)
+        }
+
+        #expect(executeCallCount == 1)
+    }
 }

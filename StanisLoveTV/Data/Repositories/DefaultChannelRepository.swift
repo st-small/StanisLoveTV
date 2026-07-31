@@ -2,40 +2,31 @@ import Dependencies
 import Foundation
 import SQLiteData
 
-@Selection private struct ChannelFavoriteRow {
-    let channel: ChannelRecord
-    let favorite: FavoriteRecord?
-}
-
 final class DefaultChannelRepository: ChannelRepository {
     @Dependency(\.database) private var db
+    @Dependency(\.favoriteRepository) private var favoriteRepository
 
     func fetchAll(playlistID: UUID) async throws -> [Channel] {
-        try await db.writer.read { database in
-            let rows = try ChannelRecord
+        let channels = try await db.writer.read { database in
+            try ChannelRecord
                 .where { $0.playlistID.eq(playlistID) }
                 .order(by: \.position)
-                .leftJoin(FavoriteRecord.all) { $0.id.eq($1.id) }
-                .select { ChannelFavoriteRow.Columns(channel: $0, favorite: $1) }
                 .fetchAll(database)
-
-            return rows.map { row in
-                var channel = row.channel.domainModel
-                channel.isFavorite = row.favorite != nil
-                return channel
-            }
+                .map(\.domainModel)
         }
+        return try await resolveFavorites(channels)
     }
 
     func fetchFavorites() async throws -> [Channel] {
-        try await db.writer.read { database in
-            let favoriteIDs = try FavoriteRecord.fetchAll(database).map(\.id)
-            guard !favoriteIDs.isEmpty else { return [] }
-            return try ChannelRecord
-                .where { $0.id.in(favoriteIDs) }
+        let favoriteKeys = try await favoriteRepository.fetchAll()
+        guard !favoriteKeys.isEmpty else { return [] }
+        return try await db.writer.read { database in
+            try ChannelRecord
                 .fetchAll(database)
-                .map { record in
-                    var channel = record.domainModel
+                .map(\.domainModel)
+                .filter { favoriteKeys.contains($0.favoriteKey) }
+                .map { channel in
+                    var channel = channel
                     channel.isFavorite = true
                     return channel
                 }
@@ -67,7 +58,7 @@ final class DefaultChannelRepository: ChannelRepository {
     }
 
     func search(query: String, playlistID: UUID) async throws -> [Channel] {
-        try await db.writer.read { database in
+        let channels = try await db.writer.read { database in
             let pattern = "%\(query)%"
             return try #sql(
                 """
@@ -81,6 +72,29 @@ final class DefaultChannelRepository: ChannelRepository {
             )
             .fetchAll(database)
             .map(\.domainModel)
+        }
+        return try await resolveFavorites(channels)
+    }
+
+    func deleteAll(playlistID: UUID) async throws {
+        try await db.writer.write { database in
+            try ChannelRecord
+                .where { $0.playlistID.eq(playlistID) }
+                .delete()
+                .execute(database)
+        }
+    }
+
+    /// Favorites live in `UserDefaults` (see `DefaultFavoriteRepository`), not SQLite,
+    /// so membership is resolved in memory rather than via SQL join.
+    private func resolveFavorites(_ channels: [Channel]) async throws -> [Channel] {
+        guard !channels.isEmpty else { return channels }
+        let favoriteKeys = try await favoriteRepository.fetchAll()
+        guard !favoriteKeys.isEmpty else { return channels }
+        return channels.map { channel in
+            var channel = channel
+            channel.isFavorite = favoriteKeys.contains(channel.favoriteKey)
+            return channel
         }
     }
 }

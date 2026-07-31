@@ -1,6 +1,6 @@
 import Foundation
 
 protocol FavoriteRepository: Sendable {
-    func fetchAll() async throws -> [UUID]
-    func toggle(channelID: UUID) async throws -> Bool
+    func fetchAll() async throws -> Set<String>
+    func toggle(favoriteKey: String) async throws -> Bool
 }

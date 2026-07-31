@@ -1709,10 +1709,11 @@ All `DependencyValues` extensions consolidated in `Core/Dependencies/DependencyV
 | `database` | `DatabaseStack` | `DatabaseStack.swift` |
 | `networkService` | `NetworkService` | `NetworkService.swift` |
 | `fileCacheManager` | `FileCacheManager` | `FileCacheManager.swift` |
-| `channelRepository` | `any ChannelRepository` | `DefaultChannelRepository` |
-| `playlistRepository` | `any PlaylistRepository` | `DefaultPlaylistRepository` |
-| `epgRepository` | `any EPGRepository` | `DefaultEPGRepository` |
-| `favoriteRepository` | `any FavoriteRepository` | `DefaultFavoriteRepository` |
+| `userDefaultsClient` | `UserDefaultsClient` | `UserDefaultsClient.swift` |
+| `channelRepository` | `any ChannelRepository` | `DefaultChannelRepository` (SQLite) |
+| `playlistRepository` | `any PlaylistRepository` | `DefaultPlaylistRepository` (UserDefaults, actor) |
+| `epgRepository` | `any EPGRepository` | `DefaultEPGRepository` (SQLite) |
+| `favoriteRepository` | `any FavoriteRepository` | `DefaultFavoriteRepository` (UserDefaults, actor) |
 | `fetchChannelsUseCase` | `FetchChannelsUseCase` | inline `liveValue` |
 | `fetchPlaylistsUseCase` | `FetchPlaylistsUseCase` | inline `liveValue` |
 | `addPlaylistUseCase` | `AddPlaylistUseCase` | inline `liveValue` |
@@ -1721,23 +1722,33 @@ All `DependencyValues` extensions consolidated in `Core/Dependencies/DependencyV
 | `fetchEPGUseCase` | `FetchEPGUseCase` | inline `liveValue` |
 | `toggleFavoriteUseCase` | `ToggleFavoriteUseCase` | inline `liveValue` |
 | `searchChannelsUseCase` | `SearchChannelsUseCase` | inline `liveValue` |
+| `rehydrateCacheUseCase` | `RehydrateCacheUseCase` | inline `liveValue` |
 
 ### Schema Versions
+
+`playlists` and `favorites` moved to `UserDefaults` in v3 — see
+`.claude/rules/persistence.md`. Only `channels` and `epgPrograms` remain in SQLite.
 
 | Version | Name | Changes |
 |---------|------|---------|
 | v1 | `v1_initial` | Creates `playlists`, `channels`, `favorites`, `epgPrograms` + indexes |
 | v2 | `v2_playlist_epg_url` | `ALTER TABLE playlists ADD COLUMN "epgURL" TEXT` |
+| v3 | `v3_move_playlists_favorites_to_userdefaults` | Recreates `channels` without its FK to `playlists` (+ `idx_channels_tvgID`); `DROP TABLE favorites`; `DROP TABLE playlists`. Destructive — safe only because the app has never shipped to TestFlight/App Store. |
 
 ### UserDefaults Keys
 
 | Key | Type | Managed by | Purpose |
 |-----|------|-----------|---------|
 | `"activePlaylistID"` | `String` (UUID) | `AppState` exclusively | Which playlist is currently active; read in `AppState.init()`, written in `AppState.activePlaylistID.didSet` |
+| `PersistenceKeys.storedPlaylistsV1` | `Data` (JSON `[PlaylistDefaultsRecord]`) | `DefaultPlaylistRepository` exclusively | Playlist URLs + metadata — not regenerable, moved out of SQLite because `Caches` can be purged |
+| `PersistenceKeys.favoriteChannelKeysV1` | `[String]` (JSON `Set<Channel.favoriteKey>`) | `DefaultFavoriteRepository` exclusively | Favorited channels, keyed by `tvgID` (fallback `streamURL`) — not regenerable, same reasoning |
 | `"epgLastFetchedAt"` | `Date` (ISO string) | `FetchEPGUseCase` | EPG 24h TTL tracking |
 | `"lastWatchedChannelID"` | `String` (UUID) | TBD | Resume last channel (optional Phase 11 enhancement) |
 
 **No repository, ViewModel, or use case may read or write `"activePlaylistID"` directly.** All access goes through `AppState`.
+
+`isRehydratingCache` on `AppState` is **not** persisted — it's transient UI state for
+the current process only (see `.claude/plans/split-persistence-userdefaults-sqlite.md`).
 
 ---
 

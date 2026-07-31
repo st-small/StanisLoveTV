@@ -87,7 +87,14 @@ struct ChannelListView: View {
 
     @ViewBuilder
     private var emptyStateView: some View {
-        if viewModel.hasActivePlaylists {
+        if viewModel.hasActivePlaylists && viewModel.isRestoringCache {
+            ContentUnavailableView {
+                Label("Restoring Your Channels", systemImage: "arrow.triangle.2.circlepath")
+            } description: {
+                Text("Re-downloading your playlist in the background.")
+            }
+            .accessibilityLabel("Restoring your channels from your saved playlist")
+        } else if viewModel.hasActivePlaylists {
             ContentUnavailableView(
                 "No Channels",
                 systemImage: "tv.slash",
