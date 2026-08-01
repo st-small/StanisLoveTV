@@ -52,7 +52,7 @@ struct AddPlaylistUseCaseTests {
         try await withDependencies {
             $0.database = db
             $0.userDefaultsClient = testDefaults
-            $0.playlistRepository = DefaultPlaylistRepository()
+            $0.playlistRepository = await DefaultPlaylistRepository()
             $0.channelRepository = DefaultChannelRepository()
             $0.networkService.downloadToCache = { _, filename in
                 try writeTempM3U(sampleM3U, filename: filename)
@@ -70,7 +70,7 @@ struct AddPlaylistUseCaseTests {
         let insertedChannels = try await withDependencies {
             $0.database = db
             $0.userDefaultsClient = testDefaults
-            $0.favoriteRepository = DefaultFavoriteRepository()
+            $0.favoriteRepository = await DefaultFavoriteRepository()
         } operation: {
             try await DefaultChannelRepository().fetchAll(playlistID: playlist.id)
         }
@@ -94,10 +94,10 @@ struct AddPlaylistUseCaseTests {
         let testDefaults = makeTestUserDefaultsClient()
         let playlist = Playlist.mock(url: URL(string: "http://example.com/p.m3u")!)
 
-        try await withDependencies {
+        await withDependencies {
             $0.database = db
             $0.userDefaultsClient = testDefaults
-            $0.playlistRepository = DefaultPlaylistRepository()
+            $0.playlistRepository = await DefaultPlaylistRepository()
             $0.channelRepository = DefaultChannelRepository()
             $0.networkService.downloadToCache = { _, _ in throw URLError(.notConnectedToInternet) }
         } operation: {
@@ -123,7 +123,7 @@ struct AddPlaylistUseCaseTests {
         try await withDependencies {
             $0.database = db
             $0.userDefaultsClient = testDefaults
-            $0.playlistRepository = DefaultPlaylistRepository()
+            $0.playlistRepository = await DefaultPlaylistRepository()
             $0.channelRepository = DefaultChannelRepository()
             $0.networkService.downloadToCache = { _, filename in
                 try writeTempM3U(sampleM3U, filename: filename)
@@ -150,7 +150,7 @@ struct AddPlaylistUseCaseTests {
         try await withDependencies {
             $0.database = db
             $0.userDefaultsClient = testDefaults
-            $0.playlistRepository = DefaultPlaylistRepository()
+            $0.playlistRepository = await DefaultPlaylistRepository()
             $0.channelRepository = DefaultChannelRepository()
             $0.networkService.downloadToCache = { _, filename in
                 try writeTempM3U(sampleM3U, filename: filename)
@@ -177,7 +177,7 @@ struct AddPlaylistUseCaseTests {
         try await withDependencies {
             $0.database = db
             $0.userDefaultsClient = testDefaults
-            $0.playlistRepository = DefaultPlaylistRepository()
+            $0.playlistRepository = await DefaultPlaylistRepository()
             $0.channelRepository = DefaultChannelRepository()
             $0.networkService.downloadToCache = { _, filename in
                 try writeTempM3U(sampleM3UNoEPG, filename: filename)
@@ -205,7 +205,7 @@ struct AddPlaylistUseCaseTests {
         try await withDependencies {
             $0.database = db
             $0.userDefaultsClient = testDefaults
-            $0.playlistRepository = DefaultPlaylistRepository()
+            $0.playlistRepository = await DefaultPlaylistRepository()
             $0.channelRepository = DefaultChannelRepository()
             $0.networkService.downloadToCache = { _, filename in
                 try writeTempM3U(sampleM3U, filename: filename)

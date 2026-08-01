@@ -34,7 +34,7 @@ struct DefaultChannelRepositoryTests {
         try await withDependencies {
             $0.database = db
             $0.userDefaultsClient = makeTestUserDefaultsClient()
-            $0.favoriteRepository = DefaultFavoriteRepository()
+            $0.favoriteRepository = await DefaultFavoriteRepository()
         } operation: {
             // Resolve the same DI-provided favoriteRepository instance
             // DefaultChannelRepository itself reads, rather than a second actor —
@@ -59,7 +59,7 @@ struct DefaultChannelRepositoryTests {
         try await withDependencies {
             $0.database = db
             $0.userDefaultsClient = makeTestUserDefaultsClient()
-            $0.favoriteRepository = DefaultFavoriteRepository()
+            $0.favoriteRepository = await DefaultFavoriteRepository()
         } operation: {
             @Dependency(\.favoriteRepository) var favoriteRepo
 
@@ -80,7 +80,7 @@ struct DefaultChannelRepositoryTests {
         try await withDependencies {
             $0.database = db
             $0.userDefaultsClient = makeTestUserDefaultsClient()
-            $0.favoriteRepository = DefaultFavoriteRepository()
+            $0.favoriteRepository = await DefaultFavoriteRepository()
         } operation: {
             let repo = DefaultChannelRepository()
             try await repo.save([Channel.mock(name: "A1")], playlistID: playlistA)
@@ -107,7 +107,7 @@ struct DefaultChannelRepositoryTests {
         try await withDependencies {
             $0.database = db
             $0.userDefaultsClient = makeTestUserDefaultsClient()
-            $0.favoriteRepository = DefaultFavoriteRepository()
+            $0.favoriteRepository = await DefaultFavoriteRepository()
         } operation: {
             @Dependency(\.favoriteRepository) var favoriteRepo
 
@@ -120,7 +120,7 @@ struct DefaultChannelRepositoryTests {
 
             let favorites = try await channelRepo.fetchFavorites()
             #expect(favorites.count == 2)
-            #expect(try! favorites.allSatisfy(\.isFavorite))
+            #expect(try favorites.allSatisfy(\.isFavorite))
             #expect(Set(favorites.map(\.name)) == ["Fav A", "Fav B"])
         }
     }
@@ -134,7 +134,7 @@ struct DefaultChannelRepositoryTests {
         try await withDependencies {
             $0.database = db
             $0.userDefaultsClient = makeTestUserDefaultsClient()
-            $0.favoriteRepository = DefaultFavoriteRepository()
+            $0.favoriteRepository = await DefaultFavoriteRepository()
         } operation: {
             @Dependency(\.favoriteRepository) var favoriteRepo
 

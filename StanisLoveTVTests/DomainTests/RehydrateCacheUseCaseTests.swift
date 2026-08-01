@@ -34,9 +34,9 @@ struct RehydrateCacheUseCaseTests {
         try await withDependencies {
             $0.database = db
             $0.userDefaultsClient = makeTestUserDefaultsClient()
-            $0.playlistRepository = DefaultPlaylistRepository()
+            $0.playlistRepository = await DefaultPlaylistRepository()
             $0.channelRepository = DefaultChannelRepository()
-            $0.favoriteRepository = DefaultFavoriteRepository()
+            $0.favoriteRepository = await DefaultFavoriteRepository()
             $0.refreshPlaylistUseCase.execute = { id in refreshedIDs.append(id) }
         } operation: {
             try await DefaultPlaylistRepository().insert(playlist)
@@ -55,9 +55,9 @@ struct RehydrateCacheUseCaseTests {
         try await withDependencies {
             $0.database = db
             $0.userDefaultsClient = makeTestUserDefaultsClient()
-            $0.playlistRepository = DefaultPlaylistRepository()
+            $0.playlistRepository = await DefaultPlaylistRepository()
             $0.channelRepository = DefaultChannelRepository()
-            $0.favoriteRepository = DefaultFavoriteRepository()
+            $0.favoriteRepository = await DefaultFavoriteRepository()
             $0.refreshPlaylistUseCase.execute = { id in refreshedIDs.append(id) }
         } operation: {
             try await DefaultPlaylistRepository().insert(playlist)
@@ -78,9 +78,9 @@ struct RehydrateCacheUseCaseTests {
         try await withDependencies {
             $0.database = db
             $0.userDefaultsClient = makeTestUserDefaultsClient()
-            $0.playlistRepository = DefaultPlaylistRepository()
+            $0.playlistRepository = await DefaultPlaylistRepository()
             $0.channelRepository = DefaultChannelRepository()
-            $0.favoriteRepository = DefaultFavoriteRepository()
+            $0.favoriteRepository = await DefaultFavoriteRepository()
             $0.refreshPlaylistUseCase.execute = { id in
                 refreshedIDs.append(id)
                 if id == failing.id { throw URLError(.notConnectedToInternet) }
@@ -102,9 +102,9 @@ struct RehydrateCacheUseCaseTests {
         try await withDependencies {
             $0.database = db
             $0.userDefaultsClient = makeTestUserDefaultsClient()
-            $0.playlistRepository = DefaultPlaylistRepository()
+            $0.playlistRepository = await DefaultPlaylistRepository()
             $0.channelRepository = DefaultChannelRepository()
-            $0.favoriteRepository = DefaultFavoriteRepository()
+            $0.favoriteRepository = await DefaultFavoriteRepository()
             $0.refreshPlaylistUseCase.execute = { _ in refreshCalled = true }
         } operation: {
             try await RehydrateCacheUseCase.liveValue.execute()

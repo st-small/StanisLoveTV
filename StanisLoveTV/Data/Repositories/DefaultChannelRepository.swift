@@ -6,6 +6,8 @@ final class DefaultChannelRepository: ChannelRepository {
     @Dependency(\.database) private var db
     @Dependency(\.favoriteRepository) private var favoriteRepository
 
+    nonisolated init() {}
+
     func fetchAll(playlistID: UUID) async throws -> [Channel] {
         let channels = try await db.writer.read { database in
             try ChannelRecord

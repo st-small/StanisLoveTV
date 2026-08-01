@@ -33,9 +33,9 @@ struct DeletePlaylistUseCaseTests {
         try await withDependencies {
             $0.database = db
             $0.userDefaultsClient = makeTestUserDefaultsClient()
-            $0.playlistRepository = DefaultPlaylistRepository()
+            $0.playlistRepository = await DefaultPlaylistRepository()
             $0.channelRepository = DefaultChannelRepository()
-            $0.favoriteRepository = DefaultFavoriteRepository()
+            $0.favoriteRepository = await DefaultFavoriteRepository()
         } operation: {
             try await DefaultPlaylistRepository().insert(playlist)
             try await DeletePlaylistUseCase.liveValue.execute(playlist.id)
@@ -55,9 +55,9 @@ struct DeletePlaylistUseCaseTests {
         try await withDependencies {
             $0.database = db
             $0.userDefaultsClient = makeTestUserDefaultsClient()
-            $0.playlistRepository = DefaultPlaylistRepository()
+            $0.playlistRepository = await DefaultPlaylistRepository()
             $0.channelRepository = DefaultChannelRepository()
-            $0.favoriteRepository = DefaultFavoriteRepository()
+            $0.favoriteRepository = await DefaultFavoriteRepository()
         } operation: {
             try await DefaultPlaylistRepository().insert(playlist)
             try await DefaultChannelRepository().save(

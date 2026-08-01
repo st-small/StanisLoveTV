@@ -1,7 +1,7 @@
 import Dependencies
 import Foundation
 
-struct UserDefaultsClient: Sendable {
+nonisolated struct UserDefaultsClient: Sendable {
     var data: @Sendable (String) -> Data?
     var setData: @Sendable (Data?, String) -> Void
     var stringArray: @Sendable (String) -> [String]?

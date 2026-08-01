@@ -22,7 +22,7 @@ struct ToggleFavoriteUseCaseTests {
 
         try await withDependencies {
             $0.userDefaultsClient = makeTestUserDefaultsClient()
-            $0.favoriteRepository = DefaultFavoriteRepository()
+            $0.favoriteRepository = await DefaultFavoriteRepository()
         } operation: {
             // Resolve the same DI-provided instance the use case itself reads,
             // rather than standing up a second actor — the repository caches
@@ -45,7 +45,7 @@ struct ToggleFavoriteUseCaseTests {
 
         try await withDependencies {
             $0.userDefaultsClient = makeTestUserDefaultsClient()
-            $0.favoriteRepository = DefaultFavoriteRepository()
+            $0.favoriteRepository = await DefaultFavoriteRepository()
         } operation: {
             @Dependency(\.favoriteRepository) var repo
 

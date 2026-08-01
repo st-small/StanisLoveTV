@@ -24,7 +24,7 @@ struct DefaultPlaylistRepositoryTests {
         try await withDependencies {
             $0.userDefaultsClient = testDefaults
         } operation: {
-            let repo = DefaultPlaylistRepository()
+            let repo = await DefaultPlaylistRepository()
             try await repo.insert(playlist)
             let all = try await repo.fetchAll()
             #expect(all.count == 1)
@@ -41,7 +41,7 @@ struct DefaultPlaylistRepositoryTests {
         try await withDependencies {
             $0.userDefaultsClient = testDefaults
         } operation: {
-            let repo = DefaultPlaylistRepository()
+            let repo = await DefaultPlaylistRepository()
             try await repo.insert(playlist)
             try await repo.delete(id: playlist.id)
             let all = try await repo.fetchAll()
@@ -58,7 +58,7 @@ struct DefaultPlaylistRepositoryTests {
         try await withDependencies {
             $0.userDefaultsClient = testDefaults
         } operation: {
-            let repo = DefaultPlaylistRepository()
+            let repo = await DefaultPlaylistRepository()
             try await repo.insert(playlist)
             try await repo.updateLastFetched(id: playlist.id, date: date)
             let fetched = try await repo.fetch(id: playlist.id)
@@ -75,7 +75,7 @@ struct DefaultPlaylistRepositoryTests {
         try await withDependencies {
             $0.userDefaultsClient = testDefaults
         } operation: {
-            let repo = DefaultPlaylistRepository()
+            let repo = await DefaultPlaylistRepository()
             try await repo.insert(playlist)
             try await repo.updateEPGURL(id: playlist.id, url: epgURL)
             let all = try await repo.fetchAll()
@@ -123,7 +123,7 @@ struct DefaultPlaylistRepositoryTests {
         try await withDependencies {
             $0.userDefaultsClient = testDefaults
         } operation: {
-            let repo = DefaultPlaylistRepository()
+            let repo = await DefaultPlaylistRepository()
             let all = try await repo.fetchAll()
             #expect(all.isEmpty)
         }

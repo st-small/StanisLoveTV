@@ -23,7 +23,7 @@ struct DefaultFavoriteRepositoryTests {
         try await withDependencies {
             $0.userDefaultsClient = testDefaults
         } operation: {
-            let repo = DefaultFavoriteRepository()
+            let repo = await DefaultFavoriteRepository()
             let isNowFavorite = try await repo.toggle(favoriteKey: "bbc1")
             #expect(isNowFavorite == true)
             let all = try await repo.fetchAll()
@@ -38,7 +38,7 @@ struct DefaultFavoriteRepositoryTests {
         try await withDependencies {
             $0.userDefaultsClient = testDefaults
         } operation: {
-            let repo = DefaultFavoriteRepository()
+            let repo = await DefaultFavoriteRepository()
             _ = try await repo.toggle(favoriteKey: "bbc1")
             let isNowFavorite = try await repo.toggle(favoriteKey: "bbc1")
             #expect(isNowFavorite == false)
@@ -54,7 +54,7 @@ struct DefaultFavoriteRepositoryTests {
         try await withDependencies {
             $0.userDefaultsClient = testDefaults
         } operation: {
-            let repo = DefaultFavoriteRepository()
+            let repo = await DefaultFavoriteRepository()
             _ = try await repo.toggle(favoriteKey: "bbc1")
             _ = try await repo.toggle(favoriteKey: "cnn")
             let all = try await repo.fetchAll()
@@ -70,7 +70,7 @@ struct DefaultFavoriteRepositoryTests {
         try await withDependencies {
             $0.userDefaultsClient = testDefaults
         } operation: {
-            let repo = DefaultFavoriteRepository()
+            let repo = await DefaultFavoriteRepository()
             try await withThrowingTaskGroup(of: Void.self) { group in
                 for key in keys {
                     group.addTask { _ = try await repo.toggle(favoriteKey: key) }

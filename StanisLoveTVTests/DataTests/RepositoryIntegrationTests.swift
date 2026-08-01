@@ -63,7 +63,7 @@ struct RepositoryIntegrationTests {
         try await withDependencies {
             $0.database = db
             $0.userDefaultsClient = makeTestUserDefaultsClient()
-            $0.favoriteRepository = DefaultFavoriteRepository()
+            $0.favoriteRepository = await DefaultFavoriteRepository()
         } operation: {
             try await DefaultChannelRepository().save([sports, movies], playlistID: playlistID)
         }
@@ -71,7 +71,7 @@ struct RepositoryIntegrationTests {
         let results = try await withDependencies {
             $0.database = db
             $0.userDefaultsClient = makeTestUserDefaultsClient()
-            $0.favoriteRepository = DefaultFavoriteRepository()
+            $0.favoriteRepository = await DefaultFavoriteRepository()
         } operation: {
             try await DefaultChannelRepository().search(query: "sport", playlistID: playlistID)
         }
