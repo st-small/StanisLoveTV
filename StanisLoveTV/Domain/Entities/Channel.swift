@@ -1,6 +1,6 @@
 import Foundation
 
-struct Channel: Identifiable, Hashable, Sendable {
+nonisolated struct Channel: Identifiable, Hashable, Sendable {
     let id: UUID
     let name: String
     let streamURL: URL
@@ -8,4 +8,8 @@ struct Channel: Identifiable, Hashable, Sendable {
     let groupTitle: String
     let tvgID: String?
     var isFavorite: Bool
+
+    /// Stable identity for favorites across M3U re-parses, where `id` is regenerated
+    /// on every refresh. Falls back to `streamURL` when the provider omits `tvg-id`.
+    var favoriteKey: String { tvgID ?? streamURL.absoluteString }
 }

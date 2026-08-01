@@ -5,7 +5,7 @@ enum PlaylistType: String, Sendable, Codable {
     case m3uPlus
 }
 
-struct Playlist: Identifiable, Sendable {
+nonisolated struct Playlist: Identifiable, Sendable {
     let id: UUID
     let name: String
     let url: URL

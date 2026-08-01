@@ -12,6 +12,16 @@ private func makeTestDatabase() throws -> DatabaseStack {
     return DatabaseStack(writer: queue)
 }
 
+private func makeTestUserDefaultsClient() -> UserDefaultsClient {
+    nonisolated(unsafe) let defaults = UserDefaults(suiteName: "test-\(UUID().uuidString)")!
+    return UserDefaultsClient(
+        data: { defaults.data(forKey: $0) },
+        setData: { value, key in defaults.set(value, forKey: key) },
+        stringArray: { defaults.stringArray(forKey: $0) },
+        setStringArray: { value, key in defaults.set(value, forKey: key) }
+    )
+}
+
 private let sampleM3U = """
 #EXTM3U url-tvg="http://example.com/epg.xml"
 #EXTINF:-1 tvg-id="bbc1" group-title="UK",BBC One
@@ -29,18 +39,20 @@ private func writeTempM3U(_ content: String, filename: String) throws -> URL {
     try content.write(to: url, atomically: true, encoding: .utf8)
     return url
 }
-/*
+
 @Suite("AddPlaylistUseCase")
 struct AddPlaylistUseCaseTests {
 
     @Test("Valid URL inserts playlist and saves channels")
     func addPlaylist_validURL_insertsAndFetchesChannels() async throws {
         let db = try makeTestDatabase()
+        let testDefaults = makeTestUserDefaultsClient()
         let playlist = Playlist.mock(url: URL(string: "http://example.com/p.m3u")!)
 
         try await withDependencies {
             $0.database = db
-            $0.playlistRepository = DefaultPlaylistRepository()
+            $0.userDefaultsClient = testDefaults
+            $0.playlistRepository = await DefaultPlaylistRepository()
             $0.channelRepository = DefaultChannelRepository()
             $0.networkService.downloadToCache = { _, filename in
                 try writeTempM3U(sampleM3U, filename: filename)
@@ -49,10 +61,17 @@ struct AddPlaylistUseCaseTests {
             try await AddPlaylistUseCase.liveValue.execute(playlist)
         }
 
-        let insertedPlaylists = try await withDependencies { $0.database = db } operation: {
+        let insertedPlaylists = try await withDependencies {
+            $0.database = db
+            $0.userDefaultsClient = testDefaults
+        } operation: {
             try await DefaultPlaylistRepository().fetchAll()
         }
-        let insertedChannels = try await withDependencies { $0.database = db } operation: {
+        let insertedChannels = try await withDependencies {
+            $0.database = db
+            $0.userDefaultsClient = testDefaults
+            $0.favoriteRepository = await DefaultFavoriteRepository()
+        } operation: {
             try await DefaultChannelRepository().fetchAll(playlistID: playlist.id)
         }
 
@@ -72,18 +91,23 @@ struct AddPlaylistUseCaseTests {
     @Test("Network failure does not insert playlist")
     func addPlaylist_networkFailure_doesNotInsertPlaylist() async throws {
         let db = try makeTestDatabase()
+        let testDefaults = makeTestUserDefaultsClient()
         let playlist = Playlist.mock(url: URL(string: "http://example.com/p.m3u")!)
 
-        try await withDependencies {
+        await withDependencies {
             $0.database = db
-            $0.playlistRepository = DefaultPlaylistRepository()
+            $0.userDefaultsClient = testDefaults
+            $0.playlistRepository = await DefaultPlaylistRepository()
             $0.channelRepository = DefaultChannelRepository()
             $0.networkService.downloadToCache = { _, _ in throw URLError(.notConnectedToInternet) }
         } operation: {
             try? await AddPlaylistUseCase.liveValue.execute(playlist)
         }
 
-        let playlists = try await withDependencies { $0.database = db } operation: {
+        let playlists = try await withDependencies {
+            $0.database = db
+            $0.userDefaultsClient = testDefaults
+        } operation: {
             try await DefaultPlaylistRepository().fetchAll()
         }
         #expect(playlists.isEmpty)
@@ -92,12 +116,14 @@ struct AddPlaylistUseCaseTests {
     @Test("Manual EPG URL takes priority over url-tvg in M3U header")
     func addPlaylist_manualEPGURL_takesHighestPriority() async throws {
         let db = try makeTestDatabase()
+        let testDefaults = makeTestUserDefaultsClient()
         let manualEPG = URL(string: "http://manual.example.com/epg.xml")!
         let playlist = Playlist.mock(url: URL(string: "http://example.com/p.m3u")!, epgURL: manualEPG)
 
         try await withDependencies {
             $0.database = db
-            $0.playlistRepository = DefaultPlaylistRepository()
+            $0.userDefaultsClient = testDefaults
+            $0.playlistRepository = await DefaultPlaylistRepository()
             $0.channelRepository = DefaultChannelRepository()
             $0.networkService.downloadToCache = { _, filename in
                 try writeTempM3U(sampleM3U, filename: filename)
@@ -106,7 +132,10 @@ struct AddPlaylistUseCaseTests {
             try await AddPlaylistUseCase.liveValue.execute(playlist)
         }
 
-        let result = try await withDependencies { $0.database = db } operation: {
+        let result = try await withDependencies {
+            $0.database = db
+            $0.userDefaultsClient = testDefaults
+        } operation: {
             try await DefaultPlaylistRepository().fetchAll()
         }
         #expect(result.first?.epgURL == manualEPG)
@@ -115,11 +144,13 @@ struct AddPlaylistUseCaseTests {
     @Test("No manual EPG: extracts url-tvg from M3U header")
     func addPlaylist_noManualEPG_extractsFromHeader() async throws {
         let db = try makeTestDatabase()
+        let testDefaults = makeTestUserDefaultsClient()
         let playlist = Playlist.mock(url: URL(string: "http://example.com/p.m3u")!, epgURL: nil)
 
         try await withDependencies {
             $0.database = db
-            $0.playlistRepository = DefaultPlaylistRepository()
+            $0.userDefaultsClient = testDefaults
+            $0.playlistRepository = await DefaultPlaylistRepository()
             $0.channelRepository = DefaultChannelRepository()
             $0.networkService.downloadToCache = { _, filename in
                 try writeTempM3U(sampleM3U, filename: filename)
@@ -128,7 +159,10 @@ struct AddPlaylistUseCaseTests {
             try await AddPlaylistUseCase.liveValue.execute(playlist)
         }
 
-        let result = try await withDependencies { $0.database = db } operation: {
+        let result = try await withDependencies {
+            $0.database = db
+            $0.userDefaultsClient = testDefaults
+        } operation: {
             try await DefaultPlaylistRepository().fetchAll()
         }
         #expect(result.first?.epgURL == URL(string: "http://example.com/epg.xml"))
@@ -137,11 +171,13 @@ struct AddPlaylistUseCaseTests {
     @Test("No EPG in M3U header and no manual URL: epgURL is nil")
     func addPlaylist_noEPGAnywhere_leavesEPGURLNil() async throws {
         let db = try makeTestDatabase()
+        let testDefaults = makeTestUserDefaultsClient()
         let playlist = Playlist.mock(url: URL(string: "http://example.com/p.m3u")!, epgURL: nil)
 
         try await withDependencies {
             $0.database = db
-            $0.playlistRepository = DefaultPlaylistRepository()
+            $0.userDefaultsClient = testDefaults
+            $0.playlistRepository = await DefaultPlaylistRepository()
             $0.channelRepository = DefaultChannelRepository()
             $0.networkService.downloadToCache = { _, filename in
                 try writeTempM3U(sampleM3UNoEPG, filename: filename)
@@ -150,7 +186,10 @@ struct AddPlaylistUseCaseTests {
             try await AddPlaylistUseCase.liveValue.execute(playlist)
         }
 
-        let result = try await withDependencies { $0.database = db } operation: {
+        let result = try await withDependencies {
+            $0.database = db
+            $0.userDefaultsClient = testDefaults
+        } operation: {
             try await DefaultPlaylistRepository().fetchAll()
         }
         #expect(result.first?.epgURL == nil)
@@ -159,12 +198,14 @@ struct AddPlaylistUseCaseTests {
     @Test("Refresh does not overwrite manually set EPG URL")
     func refreshPlaylist_doesNotOverwriteManualEPGURL() async throws {
         let db = try makeTestDatabase()
+        let testDefaults = makeTestUserDefaultsClient()
         let manualEPG = URL(string: "http://manual.example.com/epg.xml")!
         let playlist = Playlist.mock(url: URL(string: "http://example.com/p.m3u")!, epgURL: manualEPG)
 
         try await withDependencies {
             $0.database = db
-            $0.playlistRepository = DefaultPlaylistRepository()
+            $0.userDefaultsClient = testDefaults
+            $0.playlistRepository = await DefaultPlaylistRepository()
             $0.channelRepository = DefaultChannelRepository()
             $0.networkService.downloadToCache = { _, filename in
                 try writeTempM3U(sampleM3U, filename: filename)
@@ -174,10 +215,12 @@ struct AddPlaylistUseCaseTests {
             try await RefreshPlaylistUseCase.liveValue.execute(playlist.id)
         }
 
-        let result = try await withDependencies { $0.database = db } operation: {
+        let result = try await withDependencies {
+            $0.database = db
+            $0.userDefaultsClient = testDefaults
+        } operation: {
             try await DefaultPlaylistRepository().fetchAll()
         }
         #expect(result.first?.epgURL == manualEPG)
     }
 }
-*/

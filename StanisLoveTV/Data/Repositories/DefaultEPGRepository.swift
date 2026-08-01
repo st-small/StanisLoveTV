@@ -5,6 +5,8 @@ import SQLiteData
 final class DefaultEPGRepository: EPGRepository {
     @Dependency(\.database) private var db
 
+    nonisolated init() {}
+
     func fetchPrograms(channelID: String, after: Date) async throws -> [EPGProgram] {
         try await db.writer.read { database in
             try EPGProgramRecord

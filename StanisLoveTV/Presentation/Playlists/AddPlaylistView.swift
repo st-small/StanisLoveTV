@@ -2,6 +2,7 @@ import SwiftUI
 
 struct AddPlaylistView: View {
     let onAdd: (URL, String, URL?) async throws -> Void
+    var isDismissable: Bool = true
 
     @Environment(\.dismiss) private var dismiss
     @State private var m3uURLText = ""
@@ -12,7 +13,9 @@ struct AddPlaylistView: View {
 
     @FocusState private var focusedField: Field?
 
-    private enum Field: Hashable { case name, m3uURL, epgURL }
+    private enum Field: Hashable {
+        case name, m3uURL, epgURL
+    }
 
     var body: some View {
         VStack(spacing: Spacing.lg) {
@@ -50,7 +53,9 @@ struct AddPlaylistView: View {
             }
 
             HStack(spacing: Spacing.md) {
-                Button("Cancel") { dismiss() }
+                if isDismissable {
+                    Button("Cancel") { dismiss() }
+                }
 
                 Button("Add Playlist") {
                     Task { await submit() }
@@ -60,7 +65,7 @@ struct AddPlaylistView: View {
             }
         }
         .padding(Spacing.xl)
-        .frame(minWidth: TVSize.sheetMinWidth)
+        .frame(maxWidth: TVSize.sheetMaxWidth)
         .overlay {
             if isAdding {
                 ProgressView("Adding playlist…")
@@ -68,8 +73,11 @@ struct AddPlaylistView: View {
                     .background(.regularMaterial, in: RoundedRectangle(cornerRadius: TVSize.thumbnailCornerRadius))
             }
         }
-        .onAppear { focusedField = .m3uURL }
-        .onExitCommand { dismiss() }
+        .onAppear { focusedField = .name }
+        .onExitCommand {
+            guard isDismissable else { return }
+            dismiss()
+        }
     }
 
     private func submit() async {
@@ -106,3 +114,9 @@ struct AddPlaylistView: View {
         }
     }
 }
+
+#if DEBUG
+#Preview {
+    AddPlaylistView(onAdd: { _,_,_ in })
+}
+#endif

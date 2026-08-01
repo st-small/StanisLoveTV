@@ -3,7 +3,7 @@ import Foundation
 
 // MARK: - Repository dependencies
 
-extension DependencyValues {
+nonisolated extension DependencyValues {
     var channelRepository: any ChannelRepository {
         get { self[ChannelRepositoryKey.self] }
         set { self[ChannelRepositoryKey.self] = newValue }
@@ -30,6 +30,7 @@ private struct UnimplementedChannelRepository: ChannelRepository {
     func fetchFavorites() async throws -> [Channel] { unimplemented("channelRepository.fetchFavorites — wire in Phase 3", placeholder: []) }
     func save(_ channels: [Channel], playlistID: UUID) async throws { unimplemented("channelRepository.save — wire in Phase 3") }
     func search(query: String, playlistID: UUID) async throws -> [Channel] { unimplemented("channelRepository.search — wire in Phase 3", placeholder: []) }
+    func deleteAll(playlistID: UUID) async throws { unimplemented("channelRepository.deleteAll — wire in Phase 3") }
 }
 
 private struct UnimplementedPlaylistRepository: PlaylistRepository {
@@ -48,8 +49,8 @@ private struct UnimplementedEPGRepository: EPGRepository {
 }
 
 private struct UnimplementedFavoriteRepository: FavoriteRepository {
-    func fetchAll() async throws -> [UUID] { unimplemented("favoriteRepository.fetchAll — wire in Phase 3", placeholder: []) }
-    func toggle(channelID: UUID) async throws -> Bool { unimplemented("favoriteRepository.toggle — wire in Phase 3", placeholder: false) }
+    func fetchAll() async throws -> Set<String> { unimplemented("favoriteRepository.fetchAll — wire in Phase 3", placeholder: []) }
+    func toggle(favoriteKey: String) async throws -> Bool { unimplemented("favoriteRepository.toggle — wire in Phase 3", placeholder: false) }
 }
 
 private enum ChannelRepositoryKey: DependencyKey {
@@ -70,7 +71,7 @@ private enum FavoriteRepositoryKey: DependencyKey {
 
 // MARK: - Use case dependencies
 
-extension DependencyValues {
+nonisolated extension DependencyValues {
     var fetchChannelsUseCase: FetchChannelsUseCase {
         get { self[FetchChannelsUseCase.self] }
         set { self[FetchChannelsUseCase.self] = newValue }
@@ -109,6 +110,11 @@ extension DependencyValues {
     var searchChannelsUseCase: SearchChannelsUseCase {
         get { self[SearchChannelsUseCase.self] }
         set { self[SearchChannelsUseCase.self] = newValue }
+    }
+
+    var rehydrateCacheUseCase: RehydrateCacheUseCase {
+        get { self[RehydrateCacheUseCase.self] }
+        set { self[RehydrateCacheUseCase.self] = newValue }
     }
 }
 

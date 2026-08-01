@@ -1,11 +1,11 @@
 import Dependencies
 import Foundation
 
-struct FetchPlaylistsUseCase {
+nonisolated struct FetchPlaylistsUseCase {
     var execute: () async throws -> [Playlist]
 }
 
-extension FetchPlaylistsUseCase: DependencyKey {
+nonisolated extension FetchPlaylistsUseCase: DependencyKey {
     static var liveValue: Self {
         .init {
             @Dependency(\.playlistRepository) var repo

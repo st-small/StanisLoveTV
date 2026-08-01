@@ -1,11 +1,11 @@
 import Dependencies
 import Foundation
 
-struct RefreshPlaylistUseCase {
+nonisolated struct RefreshPlaylistUseCase {
     var execute: (UUID) async throws -> Void
 }
 
-extension RefreshPlaylistUseCase: DependencyKey {
+nonisolated extension RefreshPlaylistUseCase: DependencyKey {
     static var liveValue: Self {
         .init { playlistID in
             @Dependency(\.networkService) var network
@@ -17,7 +17,7 @@ extension RefreshPlaylistUseCase: DependencyKey {
             let cacheFilename = "playlist-\(playlistID).m3u"
             let localURL = try await network.downloadToCache(playlist.url, cacheFilename)
             let content = try String(contentsOf: localURL, encoding: .utf8)
-            let parseResult = try M3UParser().parse(content)
+            let parseResult = try await M3UParser().parse(content)
 
             // EPG URL is intentionally not updated on refresh — user setting wins
             try await channelRepo.save(parseResult.channels, playlistID: playlistID)

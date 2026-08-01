@@ -1,6 +1,6 @@
 import Foundation
 
-struct EPGProgram: Identifiable, Sendable {
+nonisolated struct EPGProgram: Identifiable, Sendable {
     let id: UUID
     let channelID: String
     let title: String

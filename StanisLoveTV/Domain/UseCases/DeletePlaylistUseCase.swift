@@ -1,15 +1,23 @@
 import Dependencies
 import Foundation
 
-struct DeletePlaylistUseCase {
+nonisolated struct DeletePlaylistUseCase {
     var execute: (UUID) async throws -> Void
 }
 
-extension DeletePlaylistUseCase: DependencyKey {
+nonisolated extension DeletePlaylistUseCase: DependencyKey {
     static var liveValue: Self {
         .init { id in
-            @Dependency(\.playlistRepository) var repo
-            try await repo.delete(id: id)
+            @Dependency(\.playlistRepository) var playlistRepo
+            @Dependency(\.channelRepository) var channelRepo
+            // No FK cascade since v3 (playlists moved to UserDefaults) — this is now
+            // the only thing preventing orphaned channel rows. Channels are deleted
+            // first: if that SQLite write fails, the playlist row (the source of
+            // truth for what the UI shows and what RehydrateCacheUseCase walks)
+            // is still there, so the failure is visible and retryable instead of
+            // leaving orphaned rows with nothing left to clean them up.
+            try await channelRepo.deleteAll(playlistID: id)
+            try await playlistRepo.delete(id: id)
         }
     }
 
