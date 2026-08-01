@@ -1,6 +1,6 @@
 import Foundation
 
-struct PlaylistDefaultsRecord: Codable, Identifiable, Sendable {
+nonisolated struct PlaylistDefaultsRecord: Codable, Identifiable, Sendable {
     let id: UUID
     var name: String
     var urlString: String
@@ -10,7 +10,7 @@ struct PlaylistDefaultsRecord: Codable, Identifiable, Sendable {
 }
 
 extension PlaylistDefaultsRecord {
-    var domainModel: Playlist? {
+    nonisolated var domainModel: Playlist? {
         guard let url = URL(string: urlString) else { return nil }
         return Playlist(
             id: id,
@@ -22,7 +22,7 @@ extension PlaylistDefaultsRecord {
         )
     }
 
-    static func from(_ playlist: Playlist) -> PlaylistDefaultsRecord {
+    nonisolated static func from(_ playlist: Playlist) -> PlaylistDefaultsRecord {
         PlaylistDefaultsRecord(
             id: playlist.id,
             name: playlist.name,

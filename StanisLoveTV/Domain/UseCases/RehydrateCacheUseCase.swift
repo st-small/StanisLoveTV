@@ -5,11 +5,11 @@ import Foundation
 /// e.g. after tvOS purges `Library/Caches` under storage pressure. Playlists
 /// themselves live in `UserDefaults` and survive that purge, so this rebuilds the
 /// derived data rather than restoring anything the user entered.
-struct RehydrateCacheUseCase {
+nonisolated struct RehydrateCacheUseCase {
     var execute: () async throws -> Void
 }
 
-extension RehydrateCacheUseCase: DependencyKey {
+nonisolated extension RehydrateCacheUseCase: DependencyKey {
     static var liveValue: Self {
         .init {
             @Dependency(\.playlistRepository) var playlistRepo

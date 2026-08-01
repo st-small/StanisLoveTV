@@ -8,14 +8,13 @@ struct UserDefaultsClient: Sendable {
     var setStringArray: @Sendable ([String]?, String) -> Void
 }
 
-extension UserDefaultsClient: DependencyKey {
+nonisolated extension UserDefaultsClient: DependencyKey {
     static var liveValue: Self {
-        let defaults = Foundation.UserDefaults.standard
-        return Self(
-            data: { defaults.data(forKey: $0) },
-            setData: { value, key in defaults.set(value, forKey: key) },
-            stringArray: { defaults.stringArray(forKey: $0) },
-            setStringArray: { value, key in defaults.set(value, forKey: key) }
+        Self(
+            data: { Foundation.UserDefaults.standard.data(forKey: $0) },
+            setData: { value, key in Foundation.UserDefaults.standard.set(value, forKey: key) },
+            stringArray: { Foundation.UserDefaults.standard.stringArray(forKey: $0) },
+            setStringArray: { value, key in Foundation.UserDefaults.standard.set(value, forKey: key) }
         )
     }
 
@@ -27,7 +26,7 @@ extension UserDefaultsClient: DependencyKey {
     )
 }
 
-extension DependencyValues {
+nonisolated extension DependencyValues {
     var userDefaultsClient: UserDefaultsClient {
         get { self[UserDefaultsClient.self] }
         set { self[UserDefaultsClient.self] = newValue }

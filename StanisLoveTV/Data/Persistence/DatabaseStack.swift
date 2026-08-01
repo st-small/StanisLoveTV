@@ -2,11 +2,11 @@ import Dependencies
 import Foundation
 import SQLiteData
 
-struct DatabaseStack {
+nonisolated struct DatabaseStack {
     let writer: any DatabaseWriter
 }
 
-extension DatabaseStack {
+nonisolated extension DatabaseStack {
     static func live() throws -> DatabaseStack {
         let url = try FileManager.default
             .url(
@@ -26,7 +26,7 @@ extension DatabaseStack {
     }
 }
 
-extension DatabaseStack: DependencyKey {
+nonisolated extension DatabaseStack: DependencyKey {
     static let liveValue: DatabaseStack = {
         do { return try DatabaseStack.live() }
         catch { fatalError("Failed to open database: \(error)") }
@@ -45,7 +45,7 @@ extension DatabaseStack: DependencyKey {
     }()
 }
 
-extension DependencyValues {
+nonisolated extension DependencyValues {
     var database: DatabaseStack {
         get { self[DatabaseStack.self] }
         set { self[DatabaseStack.self] = newValue }

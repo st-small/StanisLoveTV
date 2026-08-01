@@ -77,12 +77,16 @@ final class PlayerViewModel {
 
         keepUpObserver = item.observe(\.isPlaybackLikelyToKeepUp, options: [.new, .initial]) { [weak self] item, _ in
             let value = item.isPlaybackLikelyToKeepUp
-            Task { @MainActor in self?.isLikelyToKeepUp = value }
+            Task { @MainActor [weak self] in
+                self?.isLikelyToKeepUp = value
+            }
         }
 
         presentationSizeObserver = item.observe(\.presentationSize, options: [.new, .initial]) { [weak self] item, _ in
             let value = item.presentationSize
-            Task { @MainActor in self?.presentationSize = value }
+            Task { @MainActor [weak self] in
+                self?.presentationSize = value
+            }
         }
 
         accessLogObserver = NotificationCenter.default.addObserver(
@@ -94,7 +98,7 @@ final class PlayerViewModel {
             let indicated = event.indicatedBitrate
             let observed = event.observedBitrate
             let stalls = event.numberOfStalls
-            Task { @MainActor in
+            Task { @MainActor [weak self] in
                 self?.indicatedBitrate = indicated
                 self?.observedBitrate = observed
                 self?.stallCount = stalls

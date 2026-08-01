@@ -1,13 +1,13 @@
 import Dependencies
 import Foundation
 
-struct NetworkService {
+nonisolated struct NetworkService {
     var fetchData: (URL) async throws -> Data
     var downloadToCache: (URL, String) async throws -> URL
     var checkStreamHealth: (URL) async throws -> Bool
 }
 
-extension NetworkService: DependencyKey {
+nonisolated extension NetworkService: DependencyKey {
     static let liveValue = NetworkService(
         fetchData: { url in
             let (data, _) = try await URLSession.shared.data(from: url)
@@ -40,7 +40,7 @@ extension NetworkService: DependencyKey {
     )
 }
 
-extension DependencyValues {
+nonisolated extension DependencyValues {
     var networkService: NetworkService {
         get { self[NetworkService.self] }
         set { self[NetworkService.self] = newValue }

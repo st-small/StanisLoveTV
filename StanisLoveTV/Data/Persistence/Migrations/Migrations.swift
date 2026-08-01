@@ -1,6 +1,6 @@
 import SQLiteData
 
-enum Migrations {
+nonisolated enum Migrations {
     static func register(in migrator: inout DatabaseMigrator) {
         migrator.registerMigration("v1_initial") { db in
             try #sql("""

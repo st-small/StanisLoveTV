@@ -13,7 +13,7 @@ private func makeTestDatabase() throws -> DatabaseStack {
 }
 
 private func makeTestUserDefaultsClient() -> UserDefaultsClient {
-    let defaults = UserDefaults(suiteName: "test-\(UUID().uuidString)")!
+    nonisolated(unsafe) let defaults = UserDefaults(suiteName: "test-\(UUID().uuidString)")!
     return UserDefaultsClient(
         data: { defaults.data(forKey: $0) },
         setData: { value, key in defaults.set(value, forKey: key) },

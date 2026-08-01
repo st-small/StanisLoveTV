@@ -12,5 +12,10 @@ enum TVSize {
     static let channelCardWidth: CGFloat = 300
     static let channelCardHeight: CGFloat = 170
     static let thumbnailCornerRadius: CGFloat = 12
-    static let sheetMinWidth: CGFloat = 700
+    static let sheetMaxWidth: CGFloat = 700
+    static let gateBlurRadius: CGFloat = 20
+}
+
+enum Opacity {
+    static let gateScrim: Double = 0.55
 }

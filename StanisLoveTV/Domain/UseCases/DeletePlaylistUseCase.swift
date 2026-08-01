@@ -1,11 +1,11 @@
 import Dependencies
 import Foundation
 
-struct DeletePlaylistUseCase {
+nonisolated struct DeletePlaylistUseCase {
     var execute: (UUID) async throws -> Void
 }
 
-extension DeletePlaylistUseCase: DependencyKey {
+nonisolated extension DeletePlaylistUseCase: DependencyKey {
     static var liveValue: Self {
         .init { id in
             @Dependency(\.playlistRepository) var playlistRepo

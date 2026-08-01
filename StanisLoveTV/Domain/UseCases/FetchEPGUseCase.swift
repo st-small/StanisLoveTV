@@ -1,11 +1,11 @@
 import Dependencies
 import Foundation
 
-struct FetchEPGUseCase {
+nonisolated struct FetchEPGUseCase {
     var execute: (String, Date) async throws -> [EPGProgram]
 }
 
-extension FetchEPGUseCase: DependencyKey {
+nonisolated extension FetchEPGUseCase: DependencyKey {
     static var liveValue: Self {
         .init { channelID, after in
             @Dependency(\.epgRepository) var repo

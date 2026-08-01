@@ -1,6 +1,6 @@
 import Foundation
 
-struct Channel: Identifiable, Hashable, Sendable {
+nonisolated struct Channel: Identifiable, Hashable, Sendable {
     let id: UUID
     let name: String
     let streamURL: URL

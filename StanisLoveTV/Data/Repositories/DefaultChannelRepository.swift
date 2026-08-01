@@ -65,8 +65,8 @@ final class DefaultChannelRepository: ChannelRepository {
                 SELECT \(ChannelRecord.columns)
                 FROM \(ChannelRecord.self)
                 WHERE \(ChannelRecord.playlistID) = \(playlistID)
-                  AND (\(ChannelRecord.name) LIKE \(pattern)
-                       OR \(ChannelRecord.groupTitle) LIKE \(pattern))
+                  AND (\(ChannelRecord.name) LIKE \(bind: pattern)
+                       OR \(ChannelRecord.groupTitle) LIKE \(bind: pattern))
                 """,
                 as: ChannelRecord.self
             )

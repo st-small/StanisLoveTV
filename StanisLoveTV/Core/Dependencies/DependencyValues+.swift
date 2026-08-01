@@ -3,7 +3,7 @@ import Foundation
 
 // MARK: - Repository dependencies
 
-extension DependencyValues {
+nonisolated extension DependencyValues {
     var channelRepository: any ChannelRepository {
         get { self[ChannelRepositoryKey.self] }
         set { self[ChannelRepositoryKey.self] = newValue }
@@ -71,7 +71,7 @@ private enum FavoriteRepositoryKey: DependencyKey {
 
 // MARK: - Use case dependencies
 
-extension DependencyValues {
+nonisolated extension DependencyValues {
     var fetchChannelsUseCase: FetchChannelsUseCase {
         get { self[FetchChannelsUseCase.self] }
         set { self[FetchChannelsUseCase.self] = newValue }

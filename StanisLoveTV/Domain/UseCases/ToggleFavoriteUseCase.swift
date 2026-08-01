@@ -1,11 +1,11 @@
 import Dependencies
 import Foundation
 
-struct ToggleFavoriteUseCase {
+nonisolated struct ToggleFavoriteUseCase {
     var execute: (Channel) async throws -> Bool
 }
 
-extension ToggleFavoriteUseCase: DependencyKey {
+nonisolated extension ToggleFavoriteUseCase: DependencyKey {
     static var liveValue: Self {
         .init { channel in
             @Dependency(\.favoriteRepository) var repo

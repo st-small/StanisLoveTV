@@ -1,7 +1,7 @@
 import Dependencies
 import Foundation
 
-struct FileCacheManager {
+nonisolated struct FileCacheManager {
     var cacheDirectory: () throws -> URL
     var writeData: (Data, String) throws -> URL
     var readData: (String) throws -> Data
@@ -9,7 +9,7 @@ struct FileCacheManager {
     var deleteFile: (String) throws -> Void
 }
 
-extension FileCacheManager: DependencyKey {
+nonisolated extension FileCacheManager: DependencyKey {
     static let liveValue = FileCacheManager(
         cacheDirectory: {
             let base = try FileManager.default.url(
@@ -78,7 +78,7 @@ extension FileCacheManager: DependencyKey {
     )
 }
 
-extension DependencyValues {
+nonisolated extension DependencyValues {
     var fileCacheManager: FileCacheManager {
         get { self[FileCacheManager.self] }
         set { self[FileCacheManager.self] = newValue }

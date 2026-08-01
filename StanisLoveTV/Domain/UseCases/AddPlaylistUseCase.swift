@@ -1,11 +1,11 @@
 import Dependencies
 import Foundation
 
-struct AddPlaylistUseCase {
+nonisolated struct AddPlaylistUseCase {
     var execute: (Playlist) async throws -> Void
 }
 
-extension AddPlaylistUseCase: DependencyKey {
+nonisolated extension AddPlaylistUseCase: DependencyKey {
     static var liveValue: Self {
         .init { playlist in
             guard ["http", "https"].contains(playlist.url.scheme) else {
@@ -20,7 +20,7 @@ extension AddPlaylistUseCase: DependencyKey {
             let cacheFilename = "playlist-\(playlist.id).m3u"
             let localURL = try await network.downloadToCache(playlist.url, cacheFilename)
             let content = try String(contentsOf: localURL, encoding: .utf8)
-            let parseResult = try M3UParser().parse(content)
+            let parseResult = try await M3UParser().parse(content)
 
             // Manual EPG URL from user wins; fall back to url-tvg extracted from header
             let resolvedEPGURL = playlist.epgURL ?? parseResult.epgURL

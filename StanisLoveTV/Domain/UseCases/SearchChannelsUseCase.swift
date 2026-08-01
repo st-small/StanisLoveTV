@@ -1,11 +1,11 @@
 import Dependencies
 import Foundation
 
-struct SearchChannelsUseCase {
+nonisolated struct SearchChannelsUseCase {
     var execute: (String, UUID) async throws -> [Channel]
 }
 
-extension SearchChannelsUseCase: DependencyKey {
+nonisolated extension SearchChannelsUseCase: DependencyKey {
     static var liveValue: Self {
         .init { query, playlistID in
             @Dependency(\.channelRepository) var repo
