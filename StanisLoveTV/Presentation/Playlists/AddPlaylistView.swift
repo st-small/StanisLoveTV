@@ -23,17 +23,17 @@ struct AddPlaylistView: View {
                 .font(.ds.largeTitle)
 
             VStack(alignment: .leading, spacing: DSSpacing.s) {
-                TextField("Name (optional)", text: $nameText)
+                DSTextField(placeholder: "Name (optional)", text: $nameText, isFocused: focusedField == .name)
                     .focused($focusedField, equals: .name)
 
-                TextField("M3U URL (required)", text: $m3uURLText)
+                DSTextField(placeholder: "M3U URL (required)", text: $m3uURLText, isFocused: focusedField == .m3uURL)
                     .focused($focusedField, equals: .m3uURL)
                     .keyboardType(.URL)
                     .textInputAutocapitalization(.never)
                     .autocorrectionDisabled()
 
                 VStack(alignment: .leading, spacing: DSSpacing.xs) {
-                    TextField("EPG/XMLTV URL (optional)", text: $epgURLText)
+                    DSTextField(placeholder: "EPG/XMLTV URL (optional)", text: $epgURLText, isFocused: focusedField == .epgURL)
                         .focused($focusedField, equals: .epgURL)
                         .keyboardType(.URL)
                         .textInputAutocapitalization(.never)
@@ -54,13 +54,14 @@ struct AddPlaylistView: View {
             HStack(spacing: DSSpacing.l) {
                 if isDismissable {
                     Button("Cancel") { dismiss() }
+                        .buttonStyle(DSButtonStyle(variant: .ghost))
                 }
 
                 Button("Add Playlist") {
                     Task { await submit() }
                 }
                 .disabled(m3uURLText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || isAdding)
-                .buttonStyle(.borderedProminent)
+                .buttonStyle(DSButtonStyle(variant: .primary, isLoading: isAdding))
             }
         }
         .padding(DSSpacing.xxxl)

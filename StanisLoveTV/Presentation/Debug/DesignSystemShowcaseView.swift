@@ -17,6 +17,11 @@ struct DesignSystemShowcaseView: View {
                 shadowSection
                 animationSection
                 gradientSection
+                focusSection
+                buttonSection
+                textFieldSection
+                cardSection
+                badgeSection
             }
             .padding(DSSpacing.xxxl)
         }
@@ -146,7 +151,7 @@ struct DesignSystemShowcaseView: View {
                     RoundedRectangle(cornerRadius: DSRadius.s)
                         .fill(Color.ds.background.elevated)
                         .frame(width: 140, height: 90)
-                    TokenCaption("focusGlow — structure only,\nnot applied yet (see plan)")
+                    TokenCaption("focusGlow — see Focus\nsection below for live demo")
                 }
             }
         }
@@ -175,10 +180,99 @@ struct DesignSystemShowcaseView: View {
             }
         }
     }
+
+    // MARK: - Focus (.dsFocusable / .dsSelected)
+
+    private var focusSection: some View {
+        SectionContainer(title: ".dsFocusable() / .dsSelected()") {
+            VStack(alignment: .leading, spacing: DSSpacing.l) {
+                HStack(spacing: DSSpacing.xxl) {
+                    FocusDemoTile(name: "card (1.08)", scale: DSFocusScale.card)
+                    FocusDemoTile(name: "button (1.06)", scale: DSFocusScale.button)
+                    FocusDemoTile(name: "chip (1.05)", scale: DSFocusScale.chip)
+                }
+                TokenCaption("Move focus onto a tile with the remote/arrow keys to see the ring + glow + scale.")
+                SelectedDemoTile()
+            }
+        }
+    }
+
+    // MARK: - Buttons (DSButton)
+
+    private var buttonSection: some View {
+        SectionContainer(title: "DSButtonStyle") {
+            VStack(alignment: .leading, spacing: DSSpacing.m) {
+                HStack(spacing: DSSpacing.s) {
+                    Button("Primary") {}
+                        .buttonStyle(DSButtonStyle(variant: .primary))
+                    Button("Secondary") {}
+                        .buttonStyle(DSButtonStyle(variant: .secondary))
+                    Button("Outline") {}
+                        .buttonStyle(DSButtonStyle(variant: .outline))
+                    Button("Ghost") {}
+                        .buttonStyle(DSButtonStyle(variant: .ghost))
+                    Button {
+                    } label: {
+                        Image(systemName: "heart")
+                    }
+                    .buttonStyle(DSButtonStyle(variant: .icon))
+                }
+                HStack(spacing: DSSpacing.s) {
+                    Button("Loading") {}
+                        .buttonStyle(DSButtonStyle(variant: .primary, isLoading: true))
+                    Button("Disabled") {}
+                        .buttonStyle(DSButtonStyle(variant: .primary))
+                        .disabled(true)
+                }
+                TokenCaption("Icon button is visually 44×44 with a 100×100 focus/hit area (Open Question 6).")
+            }
+        }
+    }
+
+    // MARK: - TextFields (DSTextField)
+
+    private var textFieldSection: some View {
+        SectionContainer(title: "DSTextField") {
+            TextFieldDemo()
+        }
+    }
+
+    // MARK: - Cards (DSCardStyle)
+
+    private var cardSection: some View {
+        SectionContainer(title: "DSCardStyle") {
+            CardStyleDemoTile()
+        }
+    }
+
+    // MARK: - Badges (DSBadge)
+
+    private var badgeSection: some View {
+        SectionContainer(title: "DSBadge") {
+            HStack(spacing: DSSpacing.s) {
+                DSBadge(style: .live)
+                DSBadge(style: .new)
+                DSBadge(style: .hd)
+                DSBadge(style: .fourK)
+                DSBadge(style: .premium)
+                DSBadge(style: .adult)
+                DSBadge(style: .rec)
+            }
+        }
+    }
 }
 
 // MARK: - Shared building blocks
 
+/// Mirrors the mockup's own section-card chrome (`background:#171723;
+/// border:1px solid rgba(255,255,255,.08); border-radius:24px; padding:32px`)
+/// — `Color.ds.background.surface` / `Color.ds.border.hairline` / `DSRadius.l`
+/// / `DSSpacing.xl` all already match these values exactly, no new tokens
+/// needed. Without this card, every section (not just inputs) sits directly on
+/// the screen's `Color.ds.background.primary` with nothing to visually group
+/// it — `DSTextField` in particular relies on a lighter container behind it to
+/// read as embedded rather than floating on bare page background, since its
+/// own fill is transparent (see DSTextField.swift).
 private struct SectionContainer<Content: View>: View {
     let title: String
     @ViewBuilder let content: Content
@@ -189,6 +283,12 @@ private struct SectionContainer<Content: View>: View {
                 .font(.ds.headline)
                 .foregroundStyle(Color.ds.text.primary)
             content
+        }
+        .padding(DSSpacing.xl)
+        .background(Color.ds.background.surface, in: RoundedRectangle(cornerRadius: DSRadius.l))
+        .overlay {
+            RoundedRectangle(cornerRadius: DSRadius.l)
+                .stroke(Color.ds.border.hairline, lineWidth: 1)
         }
     }
 }
@@ -314,6 +414,85 @@ private struct GradientSample: View {
                 .frame(width: 160, height: 90)
             TokenCaption(name)
         }
+    }
+}
+
+private struct FocusDemoTile: View {
+    let name: String
+    let scale: CGFloat
+    @FocusState private var isFocused: Bool
+
+    var body: some View {
+        VStack(spacing: DSSpacing.xs) {
+            RoundedRectangle(cornerRadius: DSRadius.s)
+                .fill(Color.ds.background.elevated)
+                .frame(width: 120, height: 80)
+                .focusable()
+                .focused($isFocused)
+                .dsFocusable(isFocused, scale: scale)
+            TokenCaption(name)
+        }
+        .padding(DSSpacing.s) // room for the scale/glow to render without clipping neighbors
+    }
+}
+
+private struct SelectedDemoTile: View {
+    @State private var isSelected = false
+
+    var body: some View {
+        HStack(spacing: DSSpacing.m) {
+            RoundedRectangle(cornerRadius: DSRadius.s)
+                .fill(Color.ds.background.elevated)
+                .frame(width: 120, height: 80)
+                .dsSelected(isSelected)
+
+            Button(isSelected ? "Deselect" : "Select") {
+                isSelected.toggle()
+            }
+            .buttonStyle(DSButtonStyle(variant: .secondary))
+        }
+        .padding(.trailing, DSSpacing.s)
+    }
+}
+
+private struct TextFieldDemo: View {
+    @State private var plainText = ""
+    @State private var searchText = ""
+    @FocusState private var focusedField: Field?
+
+    private enum Field: Hashable {
+        case plain, search
+    }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: DSSpacing.s) {
+            DSTextField(placeholder: "Введите текст...", text: $plainText, isFocused: focusedField == .plain)
+                .focused($focusedField, equals: .plain)
+                .frame(maxWidth: 420)
+
+            DSTextField(variant: .search, placeholder: "Поиск каналов, фильмов...", text: $searchText, isFocused: focusedField == .search)
+                .focused($focusedField, equals: .search)
+                .frame(maxWidth: 420)
+
+            TokenCaption("Focus a field to see the .input focus preset (single #B85CFF border + soft glow, no scale).")
+        }
+    }
+}
+
+private struct CardStyleDemoTile: View {
+    @FocusState private var isFocused: Bool
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: DSSpacing.xs) {
+            RoundedRectangle(cornerRadius: DSRadius.s)
+                .fill(Color.ds.background.elevated)
+                .frame(width: DSSize.channelCardWidth, height: DSSize.channelCardHeight)
+                .focusable()
+                .focused($isFocused)
+                .dsCardStyle(isFocused: isFocused)
+            TokenCaption("Same chrome ChannelCardView uses — hairline border + DSShadow.card + .dsFocusable(scale: .card).")
+        }
+        .padding(DSSpacing.s)
     }
 }
 
