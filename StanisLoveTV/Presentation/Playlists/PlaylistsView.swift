@@ -51,7 +51,7 @@ struct PlaylistsView: View {
             Text("Add an M3U playlist to get started.")
                 .foregroundStyle(.secondary)
             Button("Add Playlist") { viewModel.showAddSheet = true }
-                .buttonStyle(.borderedProminent)
+                .buttonStyle(DSButtonStyle(variant: .primary))
                 .padding(.top, DSSpacing.s)
         }
     }
@@ -81,14 +81,8 @@ private struct PlaylistRowView: View {
     var body: some View {
         HStack(spacing: DSSpacing.l) {
             VStack(alignment: .leading, spacing: DSSpacing.xs) {
-                HStack(spacing: DSSpacing.xs) {
-                    if isActive {
-                        Image(systemName: "checkmark.circle.fill")
-                            .foregroundStyle(.green)
-                    }
-                    Text(playlist.name)
-                        .font(.headline)
-                }
+                Text(playlist.name)
+                    .font(.headline)
                 Text(playlist.url.absoluteString)
                     .font(.caption)
                     .foregroundStyle(.secondary)
@@ -99,6 +93,11 @@ private struct PlaylistRowView: View {
                         .foregroundStyle(.tertiary)
                 }
             }
+            // .dsSelected() applied only to the leading text block, not the whole
+            // row — the ring + top-trailing checkmark badge would otherwise land
+            // right on top of the Refresh/Delete buttons at the row's trailing edge.
+            .padding(DSSpacing.xs)
+            .dsSelected(isActive, cornerRadius: DSRadius.s)
 
             Spacer()
 

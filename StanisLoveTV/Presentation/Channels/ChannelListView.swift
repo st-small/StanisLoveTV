@@ -4,6 +4,8 @@ struct ChannelListView: View {
     @Bindable var viewModel: ChannelListViewModel
     var onNavigateToPlaylists: () -> Void = {}
 
+    @FocusState private var isSearchFocused: Bool
+
     private let gridColumns = [
         GridItem(.adaptive(minimum: DSSize.channelCardWidth), spacing: DSSpacing.l)
     ]
@@ -51,7 +53,8 @@ struct ChannelListView: View {
 
     @ViewBuilder
     private var searchBar: some View {
-        TextField("Search channels...", text: $viewModel.searchQuery)
+        DSTextField(variant: .search, placeholder: "Search channels...", text: $viewModel.searchQuery, isFocused: isSearchFocused)
+            .focused($isSearchFocused)
             .padding(DSSpacing.s)
             .onChange(of: viewModel.searchQuery) {
                 Task { await viewModel.search() }
