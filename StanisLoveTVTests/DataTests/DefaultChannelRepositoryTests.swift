@@ -120,7 +120,8 @@ struct DefaultChannelRepositoryTests {
 
             let favorites = try await channelRepo.fetchFavorites()
             #expect(favorites.count == 2)
-            #expect(try favorites.allSatisfy(\.isFavorite))
+            let allFavorites = favorites.allSatisfy(\.isFavorite)
+            #expect(allFavorites)
             #expect(Set(favorites.map(\.name)) == ["Fav A", "Fav B"])
         }
     }

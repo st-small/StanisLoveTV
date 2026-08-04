@@ -5,7 +5,7 @@ struct ChannelListView: View {
     var onNavigateToPlaylists: () -> Void = {}
 
     private let gridColumns = [
-        GridItem(.adaptive(minimum: TVSize.channelCardWidth), spacing: Spacing.md)
+        GridItem(.adaptive(minimum: DSSize.channelCardWidth), spacing: DSSpacing.l)
     ]
 
     var body: some View {
@@ -52,7 +52,7 @@ struct ChannelListView: View {
     @ViewBuilder
     private var searchBar: some View {
         TextField("Search channels...", text: $viewModel.searchQuery)
-            .padding(Spacing.sm)
+            .padding(DSSpacing.s)
             .onChange(of: viewModel.searchQuery) {
                 Task { await viewModel.search() }
             }
@@ -72,13 +72,13 @@ struct ChannelListView: View {
                 Divider()
 
                 ScrollView {
-                    LazyVGrid(columns: gridColumns, spacing: Spacing.md) {
+                    LazyVGrid(columns: gridColumns, spacing: DSSpacing.l) {
                         ForEach(viewModel.filteredChannels) { channel in
                             ChannelCardView(channel: channel)
                                 .onTapGesture { viewModel.selectedChannel = channel }
                         }
                     }
-                    .padding(Spacing.md)
+                    .padding(DSSpacing.l)
                 }
                 .focusSection()
             }

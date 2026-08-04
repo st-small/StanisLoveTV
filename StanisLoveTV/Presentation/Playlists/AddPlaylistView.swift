@@ -18,12 +18,11 @@ struct AddPlaylistView: View {
     }
 
     var body: some View {
-        VStack(spacing: Spacing.lg) {
+        VStack(spacing: DSSpacing.xxl) {
             Text("Add Playlist")
-                .font(.title2)
-                .bold()
+                .font(.ds.largeTitle)
 
-            VStack(alignment: .leading, spacing: Spacing.sm) {
+            VStack(alignment: .leading, spacing: DSSpacing.s) {
                 TextField("Name (optional)", text: $nameText)
                     .focused($focusedField, equals: .name)
 
@@ -33,7 +32,7 @@ struct AddPlaylistView: View {
                     .textInputAutocapitalization(.never)
                     .autocorrectionDisabled()
 
-                VStack(alignment: .leading, spacing: Spacing.xs) {
+                VStack(alignment: .leading, spacing: DSSpacing.xs) {
                     TextField("EPG/XMLTV URL (optional)", text: $epgURLText)
                         .focused($focusedField, equals: .epgURL)
                         .keyboardType(.URL)
@@ -42,17 +41,17 @@ struct AddPlaylistView: View {
 
                     Text("Leave blank to auto-detect from playlist header.")
                         .font(.caption)
-                        .foregroundStyle(.secondary)
+                        .foregroundStyle(Color.ds.text.secondary)
                 }
             }
 
             if let validationError {
                 Text(validationError)
-                    .foregroundStyle(.red)
+                    .foregroundStyle(Color.ds.accent.error)
                     .font(.callout)
             }
 
-            HStack(spacing: Spacing.md) {
+            HStack(spacing: DSSpacing.l) {
                 if isDismissable {
                     Button("Cancel") { dismiss() }
                 }
@@ -64,13 +63,13 @@ struct AddPlaylistView: View {
                 .buttonStyle(.borderedProminent)
             }
         }
-        .padding(Spacing.xl)
-        .frame(maxWidth: TVSize.sheetMaxWidth)
+        .padding(DSSpacing.xxxl)
+        .frame(maxWidth: DSSize.sheetMaxWidth)
         .overlay {
             if isAdding {
                 ProgressView("Adding playlist…")
-                    .padding(Spacing.lg)
-                    .background(.regularMaterial, in: RoundedRectangle(cornerRadius: TVSize.thumbnailCornerRadius))
+                    .padding(DSSpacing.xxl)
+                    .background(.regularMaterial, in: RoundedRectangle(cornerRadius: DSRadius.s))
             }
         }
         .onAppear { focusedField = .name }

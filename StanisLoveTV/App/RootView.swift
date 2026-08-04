@@ -73,7 +73,7 @@ private struct MainTabView: View {
                 guard wasRehydrating, !isRehydrating else { return }
                 Task { await channelListViewModel.load() }
             }
-            .blur(radius: appStateController.playlistGateState == .locked ? TVSize.gateBlurRadius : 0)
+            .blur(radius: appStateController.playlistGateState == .locked ? DSSize.gateBlurRadius : 0)
             .disabled(appStateController.playlistGateState == .locked)
 
             if appStateController.playlistGateState == .locked {
