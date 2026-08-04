@@ -21,7 +21,7 @@ struct PlayerView: View {
                         presentationSize: viewModel.presentationSize,
                         isLikelyToKeepUp: viewModel.isLikelyToKeepUp
                     )
-                    .padding(Spacing.md)
+                    .padding(DSSpacing.l)
                 }
             }
             .onAppear { viewModel.play() }

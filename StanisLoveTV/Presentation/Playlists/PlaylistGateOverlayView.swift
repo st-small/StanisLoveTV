@@ -5,9 +5,9 @@ struct PlaylistGateOverlayView: View {
 
     var body: some View {
         ZStack {
-            Color.black.opacity(Opacity.gateScrim).ignoresSafeArea()
+            Color.ds.background.overlay.ignoresSafeArea()
             AddPlaylistView(onAdd: onAdd, isDismissable: false)
-                .background(.regularMaterial, in: RoundedRectangle(cornerRadius: TVSize.thumbnailCornerRadius))
+                .background(.regularMaterial, in: RoundedRectangle(cornerRadius: DSRadius.s))
         }
         .focusSection()
         .onExitCommand { } // Swallow Menu — the gate cannot be dismissed except by adding a playlist.

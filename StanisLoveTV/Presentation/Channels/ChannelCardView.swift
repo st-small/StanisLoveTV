@@ -17,10 +17,10 @@ struct ChannelCardView: View {
                 .scaledToFit()
                 .accessibilityHidden(true)
                 .frame(maxWidth: .infinity)
-                .frame(height: TVSize.channelCardHeight * 0.65)
+                .frame(height: DSSize.channelCardHeight * 0.65)
                 .background(.ultraThinMaterial)
 
-            VStack(alignment: .leading, spacing: Spacing.xs / 2) {
+            VStack(alignment: .leading, spacing: DSSpacing.xs / 2) {
                 Text(channel.name)
                     .font(.headline)
                     .lineLimit(1)
@@ -31,13 +31,13 @@ struct ChannelCardView: View {
                     .lineLimit(1)
             }
             .frame(maxWidth: .infinity, alignment: .leading)
-            .padding(.horizontal, Spacing.sm)
-            .padding(.vertical, Spacing.xs)
-            .frame(height: TVSize.channelCardHeight * 0.35)
+            .padding(.horizontal, DSSpacing.s)
+            .padding(.vertical, DSSpacing.xs)
+            .frame(height: DSSize.channelCardHeight * 0.35)
         }
-        .frame(width: TVSize.channelCardWidth, height: TVSize.channelCardHeight)
+        .frame(width: DSSize.channelCardWidth, height: DSSize.channelCardHeight)
         .background(.regularMaterial)
-        .clipShape(RoundedRectangle(cornerRadius: TVSize.thumbnailCornerRadius))
+        .clipShape(RoundedRectangle(cornerRadius: DSRadius.s))
         .focusable()
         .focused($isFocused)
         .scaleEffect(isFocused ? 1.1 : 1.0)

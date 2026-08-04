@@ -58,21 +58,41 @@ Every screen with custom navigation must handle `.onExitCommand`. Omitting it br
 
 ## Design Constants — use these, no magic numbers
 
+The full token set lives in `Core/DesignSystem/*`, one namespace per category. Never use
+raw numeric literals or `Color(...)`/`Font(...)` literals for spacing, radius, size, color,
+typography, shadow, or animation in Presentation code — reference the token instead.
+
+- `Color.ds.*`    — `Color+DesignSystem.swift` (`background`/`text`/`accent`/`badge`/`border`)
+- `Font.ds.*`     — `Font+DesignSystem.swift` (`hero`/`largeTitle`/`title`/`headline`/`body`/`caption`)
+- `DSSpacing.*`   — `DS+Spacing.swift`
+- `DSRadius.*`    — `DS+Radius.swift`
+- `DSSize.*`      — `DS+Size.swift` (component layout constants, not mockup tokens)
+- `DSShadow.*`    — `DS+Shadow.swift`
+- `DSAnimation.*` — `DS+Animation.swift`
+- `DSGradient.*`  — `DS+Gradient.swift`
+
 ```swift
-enum Spacing {
+enum DSSpacing {
+    static let xxs: CGFloat = 4
     static let xs: CGFloat = 8
-    static let sm: CGFloat = 16
-    static let md: CGFloat = 24
-    static let lg: CGFloat = 40
-    static let xl: CGFloat = 60
+    static let s: CGFloat = 16
+    static let m: CGFloat = 20
+    static let l: CGFloat = 24
+    static let xl: CGFloat = 32
+    static let xxl: CGFloat = 40
+    static let xxxl: CGFloat = 48
 }
 
-enum TVSize {
+enum DSSize {
     static let channelCardWidth: CGFloat = 300
     static let channelCardHeight: CGFloat = 170
-    static let thumbnailCornerRadius: CGFloat = 12
+    static let sheetMaxWidth: CGFloat = 700
+    static let gateBlurRadius: CGFloat = 20
 }
 ```
+
+`DSRadius.s` (12pt) is the standard card/thumbnail corner radius — it replaces the old
+`TVSize.thumbnailCornerRadius`, which was dropped as a duplicate rather than ported 1:1.
 
 ## Video Playback
 

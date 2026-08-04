@@ -42,7 +42,7 @@ struct PlaylistsView: View {
     }
 
     private var emptyState: some View {
-        VStack(spacing: Spacing.md) {
+        VStack(spacing: DSSpacing.l) {
             Image(systemName: "list.bullet.clipboard")
                 .font(.system(size: 80))
                 .foregroundStyle(.secondary)
@@ -52,7 +52,7 @@ struct PlaylistsView: View {
                 .foregroundStyle(.secondary)
             Button("Add Playlist") { viewModel.showAddSheet = true }
                 .buttonStyle(.borderedProminent)
-                .padding(.top, Spacing.sm)
+                .padding(.top, DSSpacing.s)
         }
     }
 
@@ -79,9 +79,9 @@ private struct PlaylistRowView: View {
     @State private var showDeleteConfirmation = false
 
     var body: some View {
-        HStack(spacing: Spacing.md) {
-            VStack(alignment: .leading, spacing: Spacing.xs) {
-                HStack(spacing: Spacing.xs) {
+        HStack(spacing: DSSpacing.l) {
+            VStack(alignment: .leading, spacing: DSSpacing.xs) {
+                HStack(spacing: DSSpacing.xs) {
                     if isActive {
                         Image(systemName: "checkmark.circle.fill")
                             .foregroundStyle(.green)
@@ -102,7 +102,7 @@ private struct PlaylistRowView: View {
 
             Spacer()
 
-            HStack(spacing: Spacing.sm) {
+            HStack(spacing: DSSpacing.s) {
                 Button("Refresh", systemImage: "arrow.clockwise") { onRefresh() }
                     .labelStyle(.iconOnly)
                     .accessibilityLabel("Refresh \(playlist.name)")
@@ -114,7 +114,7 @@ private struct PlaylistRowView: View {
                 .accessibilityLabel("Delete \(playlist.name)")
             }
         }
-        .padding(.vertical, Spacing.xs)
+        .padding(.vertical, DSSpacing.xs)
         .confirmationDialog("Delete \"\(playlist.name)\"?", isPresented: $showDeleteConfirmation) {
             Button("Delete", role: .destructive) { onDelete() }
             Button("Cancel", role: .cancel) {}

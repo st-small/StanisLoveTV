@@ -5,6 +5,10 @@ struct StanisLoveTVApp: App {
     private let appState = AppState()
     private let appStateController = AppStateController()
 
+    init() {
+        Font.registerDesignSystemFonts()
+    }
+
     var body: some Scene {
         WindowGroup {
             RootView()

@@ -8,7 +8,7 @@ struct PlaybackStatsOverlayView: View {
     let isLikelyToKeepUp: Bool
 
     var body: some View {
-        VStack(alignment: .leading, spacing: Spacing.xs) {
+        VStack(alignment: .leading, spacing: DSSpacing.xs) {
             Text("PLAYBACK STATS")
                 .font(.caption2)
                 .bold()
@@ -19,17 +19,17 @@ struct PlaybackStatsOverlayView: View {
             statRow("Stalls", "\(stallCount)")
             statRow("Buffer", isLikelyToKeepUp ? "Healthy" : "Low")
         }
-        .padding(Spacing.sm)
-        .background(.black.opacity(0.6), in: RoundedRectangle(cornerRadius: TVSize.thumbnailCornerRadius))
+        .padding(DSSpacing.s)
+        .background(.black.opacity(0.6), in: RoundedRectangle(cornerRadius: DSRadius.s))
         .foregroundStyle(.white)
         .font(.caption)
         .accessibilityHidden(true)
     }
 
     private func statRow(_ label: String, _ value: String) -> some View {
-        HStack(spacing: Spacing.sm) {
+        HStack(spacing: DSSpacing.s) {
             Text(label).foregroundStyle(.secondary)
-            Spacer(minLength: Spacing.sm)
+            Spacer(minLength: DSSpacing.s)
             Text(value).monospacedDigit()
         }
     }

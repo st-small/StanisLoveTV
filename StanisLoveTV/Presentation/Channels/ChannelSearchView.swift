@@ -6,7 +6,7 @@ struct ChannelSearchView: View {
     let onSelect: (Channel) -> Void
 
     private let gridColumns = [
-        GridItem(.adaptive(minimum: TVSize.channelCardWidth), spacing: Spacing.md)
+        GridItem(.adaptive(minimum: DSSize.channelCardWidth), spacing: DSSpacing.l)
     ]
 
     var body: some View {
@@ -18,13 +18,13 @@ struct ChannelSearchView: View {
             )
         } else {
             ScrollView {
-                LazyVGrid(columns: gridColumns, spacing: Spacing.md) {
+                LazyVGrid(columns: gridColumns, spacing: DSSpacing.l) {
                     ForEach(results) { channel in
                         ChannelCardView(channel: channel)
                             .onTapGesture { onSelect(channel) }
                     }
                 }
-                .padding(Spacing.md)
+                .padding(DSSpacing.l)
             }
             .focusSection()
         }

@@ -2,6 +2,7 @@ import Observation
 import Foundation
 
 @Observable
+nonisolated
 final class AppState {
     var activePlaylistID: UUID? {
         didSet {

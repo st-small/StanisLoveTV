@@ -6,16 +6,16 @@ struct CategorySidebarView: View {
 
     var body: some View {
         ScrollView {
-            LazyVStack(alignment: .leading, spacing: Spacing.xs) {
+            LazyVStack(alignment: .leading, spacing: DSSpacing.xs) {
                 allChannelsRow
-                Divider().padding(.vertical, Spacing.xs)
+                Divider().padding(.vertical, DSSpacing.xs)
                 ForEach(categories, id: \.groupTitle) { category in
                     categoryRow(category)
                 }
             }
-            .padding(.vertical, Spacing.sm)
+            .padding(.vertical, DSSpacing.s)
         }
-        .frame(minWidth: TVSize.channelCardWidth)
+        .frame(minWidth: DSSize.channelCardWidth)
         .focusSection()
     }
 
@@ -32,8 +32,8 @@ struct CategorySidebarView: View {
                         .foregroundStyle(.tint)
                 }
             }
-            .padding(.horizontal, Spacing.sm)
-            .padding(.vertical, Spacing.xs)
+            .padding(.horizontal, DSSpacing.s)
+            .padding(.vertical, DSSpacing.xs)
         }
         .buttonStyle(.plain)
     }
@@ -56,8 +56,8 @@ struct CategorySidebarView: View {
                         .foregroundStyle(.tint)
                 }
             }
-            .padding(.horizontal, Spacing.sm)
-            .padding(.vertical, Spacing.xs)
+            .padding(.horizontal, DSSpacing.s)
+            .padding(.vertical, DSSpacing.xs)
         }
         .buttonStyle(.plain)
     }
